@@ -2,16 +2,32 @@ import React from 'react'
 import { DocsThemeConfig } from 'nextra-theme-docs'
 
 const config: DocsThemeConfig = {
-  logo: <span>My Project</span>,
+  logo: <span>😸신우섭의 도서관 v2</span>,
   project: {
-    link: 'https://github.com/shuding/nextra-docs-template',
+    link: 'https://github.com/mainmethod0126',
   },
   chat: {
     link: 'https://discord.com',
   },
-  docsRepositoryBase: 'https://github.com/shuding/nextra-docs-template',
+  docsRepositoryBase: 'https://github.com/mainmethod0126/mainmethod0126.github.io',
   footer: {
     text: 'Nextra Docs Template',
+  },
+  sidebar: {
+    titleComponent({ title, type }) {
+      if (type === 'separator') {
+        return (
+          <div style={{ background: 'cyan', textAlign: 'center' }}>{title}</div>
+        )
+      }
+      if (title === 'Introduction') {
+        return <>👋 {title}</>
+      }
+      if (title === 'elasticsearch') {
+        return <>🗂️ {title}</>
+      }
+      return <>📝 {title}</>
+    }
   },
 }
 
