@@ -26,6 +26,9 @@ const config: DocsThemeConfig = {
       if (title === 'elasticsearch') {
         return <>🗂️ {title}</>
       }
+      if (type === 'page') {
+        return <>↗️ {title}</>
+      }
       return <>📝 {title}</>
     }
   },
