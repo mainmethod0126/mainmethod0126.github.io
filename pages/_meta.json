@@ -1,15 +1,20 @@
 {
   "index": "Introduction",
-  "another": "Another Page",
-  "advanced": "Advanced (A Folder)",
-  "about": {
-    "title": "About",
-    "type": "page"
+  "---": {
+    "title": "",
+    "type": "separator"
   },
-  "contact": {
-    "title": "Contact ↗",
+  "elasticsearch": "elasticsearch",
+  "tistory": {
+    "title": "Tistory Blog ↗",
     "type": "page",
-    "href": "https://twitter.com/shuding_",
+    "href": "https://shinwusub.tistory.com/",
+    "newWindow": true
+  },
+  "oldgitblog": {
+    "title": "Old Github Blog ↗",
+    "type": "page",
+    "href": "https://mainmethod0126.github.io/old-tech-blog/",
     "newWindow": true
   }
 }
