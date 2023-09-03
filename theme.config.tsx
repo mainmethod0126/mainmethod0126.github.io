@@ -32,6 +32,9 @@ const config: DocsThemeConfig = {
       if (title === 'common') {
         return <>📒 {title}</>
       }
+      if (title === 'java') {
+        return <>📒 {title}</>
+      }
       if (type === 'page') {
         return <>↗️ {title}</>
       }
