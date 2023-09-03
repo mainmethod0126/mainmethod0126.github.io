@@ -3,11 +3,9 @@
 CentOS7에 java 프로세스를 가동시키고 해당 java service가 제공하는 api를 계속 호출했더니 메모리가 야금야금 증가해서 증가한 메모리를 유지하는 현상을 발견했습니다
 과연 이게 메모리 누수인지 아니면 다른 이유인지 확인해 보겠습니다.
 
-<!--more-->
-
 # Java Service 실행 환경
 
-```
+```bash
 api version : 2.3.1
 os : CentOS Linux release 7.7.1908 (Core)
 jdk : openjdk "14.0.1"
@@ -153,7 +151,7 @@ jvm native-memory doc : https://www.baeldung.com/native-memory-tracking-in-jvm
 ## JVM native memory tracking 방법
 
 1. java 실행인자에 -XX:NativeMemoryTracking=detail
-2. 터미널 명령어 <jdk설치위치>/bin/jcmd \<pid\> VM.native_memory detail 실행
+2. 터미널 명령어 `<jdk설치위치>`/bin/jcmd `<pid>` VM.native_memory detail 실행
 3. 결과
 
 ```
