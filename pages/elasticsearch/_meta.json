@@ -1,5 +1,6 @@
 {
     "Deep-paging-in-Elasticsearch": "Elasticsearch에서 deep paging",
+    "Do-not-break-down-Elasticsearch-bulk-inserts-too-small": "elasticsearch  bulk insert를 너무 작게 쪼개면 안된다",
     "Basic-Concepts-of-Elasticsearch": "Elasticsearch의 기본개념"
 }
   

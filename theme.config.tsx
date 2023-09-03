@@ -29,6 +29,9 @@ const config: DocsThemeConfig = {
       if (title === 'c++') {
         return <>📒 {title}</>
       }
+      if (title === 'common') {
+        return <>📒 {title}</>
+      }
       if (type === 'page') {
         return <>↗️ {title}</>
       }
