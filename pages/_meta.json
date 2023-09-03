@@ -4,6 +4,7 @@
     "title": "",
     "type": "separator"
   },
+  "cpp": "c++",
   "elasticsearch": "elasticsearch",
   "tistory": {
     "title": "Tistory Blog ↗",
