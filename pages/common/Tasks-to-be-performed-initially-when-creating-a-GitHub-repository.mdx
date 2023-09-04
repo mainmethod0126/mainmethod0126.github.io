@@ -1,0 +1,37 @@
+# Github 공개 레포 생성시 초기에 해야하는 것들
+
+가끔 레포 생성해놓고 main(또는 master) 에 대한 직접 push 막아야하고.. readme 작성해야하... 또 뭐 해야하더라? 라고 멍때릴 때 있습니다.
+
+간단한게 이 문서를 보고 어떤 작업을 해야하는지 기억을 떠올릴 수 있도록 하려는 목적입니다.
+
+---
+
+## main(또는 master) 에 대한 직접 push 금지하기
+
+최소한 main(또는 master) 에 대한 직접 push는 금지하는게 좋습니다.
+
+**레포 선택 👉 Settings 👉 Code and automation - Branches 👉 Branch protection rule 추가 👉 Lock branch 체크✔**
+
+---
+
+## PullRequest 를 이용한 병합만 허용 (코드 리뷰 강제화)
+
+코드 리뷰를 필수로 진행하도록 제한합니다
+
+**레포 선택 👉 Settings 👉 Code and automation - Branches 👉 Branch protection rule 추가 👉 Require a pull request before merging 체크✔, Require approvals 체크✔, Require review from Code Owners 체크✔**
+
+---
+
+## Readme 작성
+
+최소한 해당 프로젝트가 어떤 목적의 프로젝트인지는 적어줍니다.
+
+---
+
+## CI 구성 (github Actions)
+
+최소한 빌드가 되는지는 검증되어야합니다
+
+빌드 검증용 CI 정도는 구성합니다.
+
+
