@@ -14,6 +14,7 @@ const config: DocsThemeConfig = {
     text: 'Nextra Docs Template',
   },
   sidebar: {
+    defaultMenuCollapseLevel: 1,
     titleComponent({ title, type }) {
       if (type === 'separator') {
         return (
