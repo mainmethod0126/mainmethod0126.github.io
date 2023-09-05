@@ -24,6 +24,12 @@ const config: DocsThemeConfig = {
       if (title === 'Introduction') {
         return <>👋 {title}</>
       }
+      if (title === 'projects') {
+        return <>🗄 {title}</>
+      }
+      if (title === 'search condition metadata') {
+        return <>🗃 {title}</>
+      }
       if (title === 'elasticsearch') {
         return <>📒 {title}</>
       }

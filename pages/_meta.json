@@ -1,6 +1,11 @@
 {
   "index": "Introduction",
-  "---": {
+  "---projects---": {
+    "title": "",
+    "type": "separator"
+  },
+  "projects": "projects",
+  "---posts---": {
     "title": "",
     "type": "separator"
   },

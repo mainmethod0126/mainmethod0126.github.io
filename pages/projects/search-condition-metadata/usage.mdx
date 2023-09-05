@@ -1,0 +1,313 @@
+# Usage
+
+## Generate MetaData
+
+This is a functionality that generates JSON-format MetaData for domain objects using the `@MetaData` and `@MetaDataField` annotations.
+
+### Example
+
+Here is an example of metadata generation for the 'TestOrder' domain class.
+
+#### Default
+
+```java
+public class MetaDataGeneratorTest {
+
+    @Test
+    @DisplayName("Generates metadata from a valid domain class")
+    public void testGenerator_whenNormalParam_thenSuccess() {
+
+        String result = MetaDataGenerator.generate(TestOrder.class);
+
+        System.out.println("metadata : " + result);
+
+        assertThat(result).isNotNull().isNotEmpty();
+
+    }
+
+}
+```
+
+**Result**
+
+```bash
+metadata : [
+  {
+    "name": "description",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "customer.user.id",
+    "type": "number",
+    "operators": ["=", "!=", ">=", "<=", ">", "<"]
+  },
+  {
+    "name": "customer.user.name",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "customer.description",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "products.name",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "products.price",
+    "type": "number",
+    "operators": ["=", "!=", ">=", "<=", ">", "<"]
+  },
+  {
+    "name": "shippingInfo.productId",
+    "type": "number",
+    "operators": ["=", "!=", ">=", "<=", ">", "<"]
+  },
+  {
+    "name": "shippingInfo.quantity",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "shippingInfo.wrapping.style",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  }
+]
+```
+
+#### Specifying a Value Directly Using @MetaDataField
+
+You can use the @MetaDataField annotation when you want to use a separate value other than the one that defaults.
+
+import { Callout } from 'nextra/components'
+ 
+<Callout type="info" emoji="ℹ️">
+  The metadata field annotation is only applied to the last primitive-type field of the domain object. If the annotation is added to a non-primitive type, it will not work and will be ignored.
+</Callout>
+
+**Proper Functioning**
+
+```java
+public class TestUser {
+
+    @MetaDataField(name = "uuid", type = "number", operators = {"=", "!="})
+    private Long id;
+
+    private String name;
+
+}
+```
+
+**Ignored**
+
+```java
+public class TestOrder {
+
+    private String description;
+
+    // @MetaDataField Ignored Cases
+    @MetaDataField(name = "king", type = "string", operators = {"=", "!="})
+    private TestCustomer customer;
+
+    private List<TestProduct> products;
+
+    private Map<String, TestShippingInfo> shippingInfo;
+}
+```
+
+**Result**
+
+```bash
+metadata : [
+  {
+    "name": "description",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  { "name": "customer.user.uuid", "type": "number", "operators": ["=", "!="] }, <---- The point where the @MetaDataField was applied
+  {
+    "name": "customer.user.name",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "customer.description",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "products.name",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "products.price",
+    "type": "number",
+    "operators": ["=", "!=", ">=", "<=", ">", "<"]
+  },
+  {
+    "name": "shippingInfo.productId",
+    "type": "number",
+    "operators": ["=", "!=", ">=", "<=", ">", "<"]
+  },
+  {
+    "name": "shippingInfo.quantity",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "shippingInfo.wrapping.style",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  }
+]
+```
+
+## Store metadata using a container
+
+### Example
+
+You can store the generated MetaData in the MetaDataContainer along with a unique key and retrieve it based on the key when needed.
+
+#### Default
+
+```java
+@MetaData
+public class Order {
+
+    @MetaDataField(name = "redefine_description", type = "number", operators = { "=", "!=", ">" })
+    private String description;
+
+    private Product product;
+
+    private Customer customer;
+}
+```
+
+```java
+@SpringBootApplication
+public class SpringSearchConditionMetadataGeneratorSampleApplication {
+
+	public static void main(String[] args) throws ClassNotFoundException {
+		SpringApplication.run(SpringSearchConditionMetadataGeneratorSampleApplication.class, args);
+
+		MetaDataContainer metaDataContainer = MetaDataContainer.getInstance();
+		metaDataContainer.setBasePackage("io.github.mainmethod0126.springsearchconditionmetadatageneratorsample");
+		metaDataContainer.scan();
+
+        System.out.println("metadata : " + metaDataContainer.get(Order.class.getName()));
+	}
+}
+```
+
+##### Result
+
+```text
+metadata :[
+  {
+    "name": "redefine_description",
+    "type": "number",
+    "operators": ["=", "!=", ">"]
+  },
+  {
+    "name": "product.name",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "product.price",
+    "type": "number",
+    "operators": ["=", "!=", ">=", "<=", ">", "<"]
+  },
+  {
+    "name": "customer.user.id",
+    "type": "number",
+    "operators": ["=", "!=", ">=", "<=", ">", "<"]
+  },
+  {
+    "name": "customer.user.name",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "customer.description",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  }
+]
+
+```
+
+#### Use `@MetaData` key()
+
+```java
+@MetaData(key = "test_order")
+public class Order {
+
+    @MetaDataField(name = "redefine_description", type = "number", operators = { "=", "!=", ">" })
+    private String description;
+
+    private Product product;
+
+    private Customer customer;
+}
+```
+
+```java
+@SpringBootApplication
+public class SpringSearchConditionMetadataGeneratorSampleApplication {
+
+	public static void main(String[] args) throws ClassNotFoundException {
+		SpringApplication.run(SpringSearchConditionMetadataGeneratorSampleApplication.class, args);
+
+		MetaDataContainer metaDataContainer = MetaDataContainer.getInstance();
+		metaDataContainer.setBasePackage("io.github.mainmethod0126.springsearchconditionmetadatageneratorsample");
+		metaDataContainer.scan();
+
+        System.out.println("metadata : " + metaDataContainer.get("test_order"));
+	}
+}
+```
+
+##### Result
+
+```text
+metadata :[
+  {
+    "name": "redefine_description",
+    "type": "number",
+    "operators": ["=", "!=", ">"]
+  },
+  {
+    "name": "product.name",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "product.price",
+    "type": "number",
+    "operators": ["=", "!=", ">=", "<=", ">", "<"]
+  },
+  {
+    "name": "customer.user.id",
+    "type": "number",
+    "operators": ["=", "!=", ">=", "<=", ">", "<"]
+  },
+  {
+    "name": "customer.user.name",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  },
+  {
+    "name": "customer.description",
+    "type": "string",
+    "operators": ["=", "!=", "in", "not in", "regex", "wildcard"]
+  }
+]
+
+```
