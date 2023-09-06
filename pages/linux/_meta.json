@@ -1,0 +1,4 @@
+{
+  "Changing-Default-Log-Storage-Paths-and-Setting-Log-Retention-Periods-for-Linux-Services": "linux service별 기본 log 저장 경로 변경 및 로그 적재 기간 설정",
+  "Using-tcpdump-to-Check-Packet-Transmission-via-a-Specific-Port-on-CentOS-7": "Centos7 에서 tcpdump를 이용하여 특정 포트를 통한 패킷 발신 여부 확인하기"
+}

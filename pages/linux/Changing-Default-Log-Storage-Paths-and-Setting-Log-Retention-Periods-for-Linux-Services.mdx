@@ -1,0 +1,257 @@
+# linux service별 기본 log 저장 경로 변경 및 로그 적재 기간 설정
+
+## /var/log/message가 너무 혼잡하다 로그를 분리하자!
+
+리눅스에 직접 만들 서비스들을 등록할 경우 별도로 log 경로를 지정하지 않으면 기본적으로 **`/var/log/message`** 경로에 쌓이게 됩니다.
+
+이럴 경우 서비스가 많아질수록 내용이 난잡해져서 log을 읽기가 어려워집니다.
+
+이때 서비스별로 **`별도의 log파일`** 을 갖도록 분리해주면 좋습니다.
+
+---
+
+## 분리할 서비스의 .service 파일 수정
+
+방법이 **systemd 버전이 240 이상이냐 아니냐**에 따라서 분리됩니다.
+
+### systemd version 240 이상
+
+systemd version 240에 아래와 같은 기능이 추가되었습니다.
+
+```text
+// https://github.com/systemd/systemd/blob/main/NEWS
+CHANGES WITH 240:
+        * StandardOutput=/StandardError= in service files gained support for
+        new "append:…" parameters, for connecting STDOUT/STDERR of a service
+        to a file, and appending to it.
+```
+
+#### StandardOutput 과 StandardError
+
+##### StandardOutput
+
+서비스에서 **`표준출력`** 하는 메세지들을 어떤 파일로 내보낼지 지정할 수 있습니다.
+
+```bash
+[Service]
+StandardOutput=append:/var/log/myapp.log
+```
+
+##### StandardError
+
+서비스에서 **`표준에러`** 로 출력되는 메세지들을 어떤 파일로 내보낼지 지정할 수 있습니다.
+
+```bash
+[Service]
+StandardError=append:/var/log/myapp.log
+```
+
+위와 같이 .service 파일을 수정하고 나서 `system daemon` 을 리로드 해줘야합니다.
+
+```bash
+sudo systemctl daemon-reload
+```
+
+### systemd version 240 미만
+
+#### rsyslog expression-based filter
+
+systemd 가 못해주니 **`rsyslog`** 의 **`expression-based filter`** 를 이용하여 특정 서비스들에 대해 filter를 걸 수 있습니다.
+
+- /etc/systemd/system/`특정 서비스`.service 파일을 열람합니다.
+   아래 내용을 반영합니다
+```text
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=<your program identifier>
+```
+- `sudo systemctl daemon-reload` 로 서비스 데몬을 리프레시 합니다. 
+- /etc/rsyslog.d/`new_file`.conf 와 같이 새로운 파일을 생성해 줍니다.
+- `new_file`.conf 열람하여 아래 내용을 추가합니다
+```text
+// programname 이 your program identifier 와 같다면 별도의 로그파일에 로그를 출력합니다.
+if $programname == '<your program identifier>' then /var/log/myapp.log & stop
+```
+- `sudo systemctl restart rsyslog` 로 rsyslog 서비스를 재실행합니다.
+
+더 자세한 정보는 아래를 참고해주시 바랍니다.
+
+[stackoverflow - systemd 서비스의 출력을 파일로 리디렉션하는 방법](https://stackoverflow.com/questions/37585758/how-to-redirect-output-of-systemd-service-to-a-file/48052152#48052152)
+[RSyslog Documentation](https://www.rsyslog.com/doc/v8-stable/configuration/filters.html)
+
+#### 로그를 그냥 안남기고 싶을 경우
+
+실제로 log 자체를 안남기고 싶을 경우가 있을 수 있습니다.
+이럴 경우 아래와 같이 `null` 로 처리해주면됩니다.
+
+그러면 마치 bash script 에서 `표준 출력` `표준 에러` 무시 `echo $variable > /dev/null 2>&1` 와 같이 동작합니다.
+
+```bash
+[Service]
+StandardError=null
+StandardOutput=null
+```
+
+---
+
+## logrotate 를 이용한 로그 적재 기간 설정
+
+service 파일을 수정해서 별도의 log파일을 만들었습니다.
+문제는 해당 파일에 로그가 계속해서 쌓이게되면 언젠가 대용량 로그파일이 되버리고 시스템의 리소스를 다 잡아먹겠죠?
+
+이걸 방지하기 위하여 **적재 기간 설정**을 해줘야합니다.
+
+이때 사용되는게 `logrotate` 입니다.
+
+기본적으로 리눅스 배포판들에는 다 설치되어있습니다.
+
+### 사용법 예시
+
+1. `/etc/logrotate.d/` 경로를 들어갑니다.
+2. 해당 디렉토리 내부에 `myapp` 이라는 파일을 생성하고 아래와 같이 설정합니다.
+
+```text
+/var/log/myapp.log {
+    daily
+    rotate 7
+    compress
+    missingok
+    notifempty
+    create 0644 root root
+}
+```
+
+- **`daily`** : 일별로 백업, 매일 새로운 로그파일 생성
+- **`rotate`** : 로그파일을 최대 7개 까지 보관, 7일 이전의 파일은 삭제
+- **`compress`** : 압축하여 보관 (gzip)
+- **`missingok`** : 로그파일이 존재하지 않아도 에러 발생하지 않음
+- **`notifempty`** : 로그 파일이 비어있을 경우 회전하지 않음
+- **`create 0644 root root`** : 새로운 로그 파일을 생성할 때, 권한을 0644로 설정하고, 소유자를 root로 설정
+
+위 설정은 `myapp.log` 파일을 일별로 백업하고, 최대 7개까지 보관하며 압축합니다. 또한, 로그 파일이 존재하지 않더라도 오류를 발생시키지 않으며, 로그 파일이 비어 있을 때는 백업하지 않습니다. 마지막으로, 로그 파일을 생성할 때 권한을 0644로 설정하고, 소유자와 그룹을 root로 설정합니다.
+
+### 주의! 신규 생성된 로그 파일에 안써지고 구 백업 로그 파일에 계속해서 쓰는 현상 발생
+
+여기서 주의해야할 점이 존재합니다.
+
+신규로 log파일을 생성하는 것은 아래와 같은 절차를 거칩니다.
+
+1. 기존 로그 파일 이름을 백업 파일로 변경
+2. 신규 파일 생성
+
+이로 인하여 발생하는 문제가 있습니다.
+
+동작하고 있는 서비스는 여전히 **이름만 바뀐 백업 파일을 Open하고 있습니다** 이렇게 되면 `i-node 번호` 가 그대로라 이름이 바뀌어도 계속해서 open하고있던 파일에 로그를 적재하게 됩니다.
+
+> 잠깐! Open하고 있는 파일 이름 변경이 가능한가?
+>
+> windows 와 달리 linux는 가능합니다 그래서 위험한 상황이 발생하곤 합니다.
+>
+> 잠깐! i-node란?
+>
+> 간단하게 말하면 `파일 테이블`이라고 생각하면됩니다. 파일 디스크립터가 `i-node`를 참조합니다
+
+그렇기 때문에 새로 만들어진 로그 파일을 사용하게 만드려면 **서비스 재시작 또는 copytruncate, USR signal**를 사용해야합니다
+
+#### 서비스 재시작
+
+말 그대로 서비스 재시작입니다.
+
+보통은 잘 사용하지 않습니다.
+
+#### copytruncate
+
+`logrotate` 설정중 하나입니다.
+
+기존에 동작하던 rotate 방식과는 달리 아래와 같이 동작합니다
+
+1. 임시 로그 파일을 만듭니다.
+2. 임시 로그 파일의 이름을 백업 로그 파일 이름으로 바꿉니다.
+3. 원본 로그 파일의 내용을 임시 로그 파일(백업 로그 파일로 이름이 바뀐)에 복사합니다
+4. 원본 로그 파일의 내용을 지웁니다
+
+이렇게 하면 `i-node 번호` 가 그대로여도 백업이 정상적으로 이뤄집니다
+
+> copytruncate 사용시 주의!!
+>
+> 기존 log파일에서 tempfile로의 `데이터 복사` 가 이뤄집니다. 복사라는 작업은 `원본 데이터에 따라 I/O`가 크게 발생할 수 있는 작업이며 저장장치에 대한 I/O는 굉장히 느린 편입니다.
+>
+> 만약 원본 데이터가 대용량이면 Copy중간에 새로운 데이터가 들어왔을 때 새로운 데이터는 복사되지 않고 원본 로그 파일의 내용을 지울때 같이 날아갈 수 있습니다!
+>
+> 그러므로 원본 로그 파일이 너무 커지지않도록 주의해야합니다.
+
+#### USR Signal
+
+애플리케이션들이 제공하는 `USR Signal` 로 해당 서비스에 `log파일이 변경되었으니 파일을 다시 열람하세요` 라는 신호를 주는 것 입니다.
+
+대부분의 오픈소스 애플리케이션들 해당 signal을 재공합니다.
+
+아래는 signal사용의 예시입니다.
+
+```
+/var/log/nginx/*.log {
+        daily
+        missingok
+        rotate 52
+        compress
+        delaycompress
+        notifempty
+        create 640 nginx adm
+        sharedscripts
+        postrotate
+                if [ -f /var/run/nginx.pid ]; then
+                        kill -USR1 `cat /var/run/nginx.pid`
+                fi
+        endscript
+}
+```
+
+> 잠깐! 직업 만든 서비스의 경우 signal 로직을 구현하지 않으면 사용불가능!
+>
+> 당연한 말이지만.. 본인이 만든 소스코드를 기반으로 동작하는 서비스의 경우 signal에 대한 로직을 만들어 놓지 않으면 signal을 이용한 방식을 사용할 수 없습니다.
+
+위에서 사용된 설정을 포함하여 더 많은 `logrotate` 설정은 아래와 같습니다.
+
+### logrotate 설정 옵션 list
+
+- **`compress`** : 로그 파일을 압축합니다.
+- **`uncompress`** : 로그 파일의 압축을 푸릅니다.
+- **`compresscmd`** : 로그 파일을 압축하기 위한 명령어를 정의합니다.
+- **`uncompresscmd`** : 로그 파일의 압축을 푸는 명령어를 정의합니다.
+- **`compressoptions`** : 압축 옵션을 지정합니다.
+- **`copy`** : 로그 파일을 복사합니다.
+- **`copytruncate`** : 로그 파일을 복사한 후, 원본 로그 파일을 비워줍니다.
+- **`create`** : 새로운 로그 파일을 생성합니다.
+- **`daily`** : 로그 파일을 일별로 회전합니다.
+- **`dateext`** : 로그 파일 이름에 날짜를 추가합니다.
+- **`delaycompress`** : 로그 파일을 압축하지 않고 한 번 더 회전합니다.
+- **`extension`** : 로그 파일의 확장자를 지정합니다.
+- **`ifempty`** : 로그 파일이 비어있을 경우에도 회전합니다.
+- **`mail`** : 로그 파일을 메일로 전송합니다.
+- **`mailfirst`** : 로그 파일을 메일로 전송한 후에 회전합니다.
+- **`maillast`** : 로그 파일을 회전한 후에 메일로 전송합니다.
+- **`missingok`** : 로그 파일이 존재하지 않아도 오류를 발생시키지 않습니다.
+- **`monthly`** : 로그 파일을 월별로 회전합니다.
+- **`nocompress`** : 로그 파일을 압축하지 않습니다.
+- **`nocopy`** : 로그 파일을 복사하지 않습니다.
+- **`nocreate`** : 새로운 로그 파일을 생성하지 않습니다.
+- **`nodelaycompress`** : 로그 파일을 바로 압축합니다.
+- **`nomail`** : 로그 파일을 메일로 전송하지 않습니다.
+- **`nomissingok`** : 로그 파일이 존재하지 않을 경우 오류를 발생시킵니다.
+- **`notifempty`** : 로그 파일이 비어있을 경우 회전하지 않습니다.
+- **`olddir`** : 회전된 로그 파일을 저장할 디렉토리를 지정합니다.
+- **`postrotate`** : 로그 파일 회전 이후에 실행할 명령어를 정의합니다.
+- **`prerotate`** : 로그 파일 회전 이전에 실행할 명령어를 정의합니다.
+- **`daily`** : 로그 파일을 일별로 회전합니다.
+- **`rotate`** : 로그 파일을 최대 몇 개까지 보관할지 지정합니다.
+- **`sharedscripts`** : postrotate, prerotate에 지정된 명령어를 한 번만 실행합니다.
+- **`size`** : 로그 파일의 크기가 지정한 크기를 넘으면 회전합니다.
+- **`start`** : 로그 파일 회전을 시작할 순서를 지정합니다.
+- **`weekly`** : 로그 파일을 주간으로 회전합니다.
+
+---
+
+## 참고 자료
+
+- [stackoverflow - systemd 서비스의 출력을 파일로 리디렉션하는 방법](https://stackoverflow.com/questions/37585758/how-to-redirect-output-of-systemd-service-to-a-file/48052152#48052152)
+- [RSyslog Documentation](https://www.rsyslog.com/doc/v8-stable/configuration/filters.html)

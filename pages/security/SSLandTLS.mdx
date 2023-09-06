@@ -1,0 +1,138 @@
+
+SSL/TLS 가 보안을 강화한 통신 방식이고 인증서를 사용한다는 것만 알고, 디테일하게 어떻게 동작하는지 알지 못하였기에 이를 파악해보려합니다.
+
+## 통신 과정
+
+바로 통신 과정부터 살펴보겠습니다
+
+### SSL Handshake
+
+HTTP도 결국 TCP통신 기반이기에 HandShake 과정이 존재합니다.
+
+**1. Client Hello**
+
+클라이언트가 서버한테 연락합니다.
+이때 아래의 정보들을 같이 보냅니다.
+
+- 사용 가능한 **`암호화 방식 목록 (Cipher Suite list)`**
+- 클라이언트에서 생선한 **`랜덤 데이터(Byte)`**
+- **`Session ID`**
+- **`SSL Protocol Version`**
+  
+---
+
+**2. Server Hello**
+
+Client Hello를 받은 서버가 클라이언트가 보내준 Cipher Suite list 중 하나를 선택하여 회신합니다.
+이때 아래의 정보들을 같이 보냅니다.
+
+- 선택된 **`Cipher Suite`**
+- 서버의 **`공개키`** 가 포함된 **`인증서`**
+- 서버측에서 생성한 **`랜덤 데이터(Byte)`**
+
+자 여기서 부터 굉장히 중요합니다.
+Server Hello 를 받은 Client 는 서버가 보내준 **`인증서`** 가 **`유효한 인증서`** 인지 판단합니다.
+
+Client 는 서버로 부터 **`Base64 로 인코딩된`** 인증서 데이터를 받게됩니다
+
+```text
+// 네이버 블로그 인증서 샘플
+
+-----BEGIN CERTIFICATE-----
+MIIG/DCCBeSgAwIBAgIQDU0+Df//H8dd2Itd3U7GkTANBgkqhkiG9w0BAQsFADBP
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMSkwJwYDVQQDEyBE
+aWdpQ2VydCBUTFMgUlNBIFNIQTI1NiAyMDIwIENBMTAeFw0yMjA4MTIwMDAwMDBa
+Fw0yMzA4MTUyMzU5NTlaMGgxCzAJBgNVBAYTAktSMRQwEgYDVQQIEwtHeWVvbmdn
+aS1kbzEUMBIGA1UEBxMLU2VvbmduYW0tc2kxFDASBgNVBAoTC05BVkVSIENvcnAu
+MRcwFQYDVQQDEw5ibG9nLm5hdmVyLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEP
+ADCCAQoCggEBAN+kuMapW1y+mVf+3nwbfDDpqoVL8rgrarjaCqtTTPj5lC5uX+B9
+HRCoT3MiJ+osw5vQJj5k3A/CQ0UYwBJtKZp2xVDYjtYGXeWZvYNQ5ChXls40yzDA
+VHqETUGGZ60KepyLdNyB6a0mTWZUAZY6GSgrF9aLaluYI0dcYZwAuM2jwRhUTUvt
+ebUegJDgHZT6wTEFOimEz/GSplW+wmlLxn91EQZHPmWU+ErrxaJmcJJbC/joCQ+h
+6iJl8mNGdPumzm5C3y3enAspcoDLnwyz1HOmlwRJmFwfqEtz8K57zJ+0X8xCgTJR
+WEh4pyhMn89S5CscXZNQVHG6N8mKRtDdQv0CAwEAAaOCA7kwggO1MB8GA1UdIwQY
+MBaAFLdrouqoqoSMeeq02g+YssWVdrn0MB0GA1UdDgQWBBTXfvYGPFidffg05LbU
+j4EqPAuIYzBjBgNVHREEXDBagg5ibG9nLm5hdmVyLmNvbYIYZ3Vlc3Rib29rLmJs
+b2cubmF2ZXIuY29tghRhZG1pbi5ibG9nLm5hdmVyLmNvbYIYYmxvZy5uYXZlcmJs
+b2d3aWRnZXQuY29tMA4GA1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcD
+AQYIKwYBBQUHAwIwgY8GA1UdHwSBhzCBhDBAoD6gPIY6aHR0cDovL2NybDMuZGln
+aWNlcnQuY29tL0RpZ2lDZXJ0VExTUlNBU0hBMjU2MjAyMENBMS00LmNybDBAoD6g
+PIY6aHR0cDovL2NybDQuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0VExTUlNBU0hBMjU2
+MjAyMENBMS00LmNybDA+BgNVHSAENzA1MDMGBmeBDAECAjApMCcGCCsGAQUFBwIB
+FhtodHRwOi8vd3d3LmRpZ2ljZXJ0LmNvbS9DUFMwfwYIKwYBBQUHAQEEczBxMCQG
+CCsGAQUFBzABhhhodHRwOi8vb2NzcC5kaWdpY2VydC5jb20wSQYIKwYBBQUHMAKG
+PWh0dHA6Ly9jYWNlcnRzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydFRMU1JTQVNIQTI1
+NjIwMjBDQTEtMS5jcnQwCQYDVR0TBAIwADCCAX8GCisGAQQB1nkCBAIEggFvBIIB
+awFpAHcA6D7Q2j71BjUy51covIlryQPTy9ERa+zraeF3fW0GvW4AAAGCkX4p5AAA
+BAMASDBGAiEAv4VafHfljFU/RO6pSDaCpbuxpUxM9k6NTO8iOhC3jk8CIQDqpiva
+xRe/Tc/4q84PJKXIveHekAaZwRmr7SNRwLO2fAB3ADXPGRu/sWxXvw+tTG1Cy7u2
+JyAmUeo/4SrvqAPDO9ZMAAABgpF+KU0AAAQDAEgwRgIhAKM/V4KPwx4fpimpKFYy
+xN9RlUmw6LPLFXaQA2STsf3wAiEA1v0pL8rIqwR49oHWJY+CtRk5WGHlNbyfeRFj
+g1JqZsUAdQCzc3cH4YRQ+GOG1gWp3BEJSnktsWcMC4fc8AMOeTalmgAAAYKRfimg
+AAAEAwBGMEQCIFddEhxXU6KToGyox5De4OO8cZbA5oJOf8lriNNQhjpMAiBsLh6a
+UhpV+EfzRrusXYscbk9AV1pc9URmKM5JF4UUZDANBgkqhkiG9w0BAQsFAAOCAQEA
+W0vtbkjCjocRqyqDt7AKICPF4VXNPt+UaLjrMGea3MgxgJ8Ls0uOvpJV5OQp1Raa
+TwbSbbS2vYGud6hYLxfkbtTxkDL+F1wkeN8R0Sk8LZPHkL+SZXP+lI3ddg5q0tT4
+3dOuv/w+no0AWg2Q3+dfO6NXB91hIHVcFk/fnYPnl/NUXvY0l81pYdSXxLexdNN3
+Dm895F1PN3EieJHkwDdFlk+oMBjlxcjbOs6kdHdstKLsDqTF8F64vF78s+i/Y9OW
+feajU+N+iY7h/YIWb0oiIOvE8ahiiikr1dO44O/H5mmFMUywHUgN8rab+xsQs+rZ
+ASII0miLWqHaD7jDe30LLQ==
+-----END CERTIFICATE-----
+```
+
+위 샘플 인증서를 보면 Base64로 인코딩 되어있는 것을 확인할 수 있는데 좀 더 디테일하게 확인해보면
+
+서버에서 전달 된 인증서는 **`ASN.1(Abstract Syntax Notation One)`** 이라는 데이터 포맷으로 만들어진 다음 데이터 바이너리를 **`BER(Basic Encoding Rules)`** 로 인코딩합니다 그 후에 인코딩된 바이너리를 **`Base64`** 로 인코딩하면 최종적으로 위의 샘플과 같은 데이터가 생성됩니다.
+
+이는 암호화된 데이터가 아니며 단순 인코더와, 데이터 포맷에 맞는 뷰어 또는 파서만 존재하면 데이터를 확인할 수 있습니다.
+
+SSL/TLS 에서 말하는 암호화된 인증서라하면 실제 인증서 정보 자체가 암호화된 것이 아니라 인증서에 존재하는 **`서명`** 이라는 항목의 값이 암호화 된 것입니다.
+
+실제로 암호화되는 인증서도 존재하는데, 우리가 흔히 볼 수 있던 **`공인인증서`** 가 이에 해당합니다. 공인인증서는 사용자에게 패스워드를 입력받는데 이런 형식의 인증서는 보통 내부에 **`비공개키`** 를 포함하고 있어서 암호화를 하지 않으면 인증서 탈취에 취약할 수 있어서 암호화를 진행합니다.
+
+하지만 SSL/TLS 에 사용되는 일반적인 인증서는 비공개키를 포함하고있지 않아 인증서 자체에 대한 암호화를 진행하지 않습니다.
+
+Client는 이 **`인증서 데이터`** 를 디코딩 한 후 **`ROOT CA(Certificate Authority, 인증기관)`** 정보를 확인하여, 공공연하게 알려진 CA라면 해당 **`CA의 공개키`** 를 찾아 
+암호화 되어있는 CA의 **`서명`** 을 **`CA의 공개키`** 로 복호화 한 후 인증서의 **`지문`** 과 비교하는 **`무결성 검증`** 으로 인증서의 유효성을 확인합니다.
+
+검증 결과 **`서명`** 과 **`지문`** 이 일치하면 **`유효한 인증서`** 로 판단됩니다.
+
+이렇게 인증서 검증 절차를 거친 후 다음 단계인 **`Client key exchange(사용자 키 교환)`** 를 진행합니다.
+
+> **서명 과 지문**
+> 
+> **`서명`** 은 CA가 해당 인증서를 **`신뢰할 수 있는 인증서`** 라고 보증해준다는 인증 정보이며
+>  
+> 이 서명은 **`Server`** 가 CA에게 **`CSR(Certificate Signing Request, 인증서 서명 요청)`** 형태로 **`Server 공개키`** 및 부가적인 인증서의 정보 (사용하는 알고리즘 정보, 국가코드, 도시, 회사명, 부서명, 이메일, 도메인 주소(CN)) 등을 포함하여 CA 에게 전달하면, CA는 전달 받은 정보들을 Hash알고리즘을 통한 해싱을 진행 후 결과로 나온 **`해시값`** 을 인증서의 **`지문`** 이라는 명칭으로 저장하고,
+> 이 **`지문`** 을 **`CA의 비공개키`** 로 암호화하여 **`서명`** 이라는 명칭으로 인증서에 저장합니다.
+> 나머지 정보들은 인증서 생성에 사용되며 특히, **`CSR에 포함된 공개키`** 는 차후 **`Client`** 가 데이터를 주고 받는데 사용 할 **`대칭키`** 를 생성하는데 이를 **`서버에 암호화해서 전달`** 할 때 필요한 중요한 요소입니다.
+>  
+> 이렇게 생성된 인증서를 다시 한번 **`CA의 비공개키`** 로 암호화하여 **`서명 요청자(Server)`** 에게 **`완성된 형태의 인증서`** 로 발급해줍니다.
+
+---
+
+**3. Client key exchange**
+
+Client 는 처음 Client Hello 단계에서 전달했던 **`자신이 생성한 랜덤 데이터`** 와 Server Hello 단계에서 전달 받은 **`서버가 생성한 랜덤 데이터`** 를 참고하여 서버와 실제 데이터를 주고 받을 때 사용할 **`대칭키`** 를 생성합니다.
+
+이렇게 생성된 **`대칭키`** 를 서버에게 전달하는데 이때 서버로 부터 전달 받은 **`인증서에 포함된 공개키`** 를 이용하여 **`대칭키를 암호화`** 하여 서버에 전달합니다.
+
+전달된 **`대칭키`** 는 실제로 서버와 클라이언트 간의 본격적인 데이터 송수신을 위해 사용되므로 앞단의 모든 작업은 이 **`대칭키`** 를 전달하기위한 일련의 준비과정이기에 이 **`대칭키`** 가 **`SSL/TLS의 핵심`** 이라고 할 수 있습니다.
+
+---
+
+**4. Finished**
+
+모든 과정이 마무리되면 Client 와 Server 둘 모두 **`"Finished" 메세지`** 를 보내고 **`Handshake 과정이 완료`** 됩니다.
+이후 모든 데이터는 **`Client key exchange`** 단계에서 생성된 **`대칭키`** 를 통하여 상호간에 **`암호화 통신`** 을 진행하게 됩니다.
+
+지금까지 SSL/TLS 의 기본적인 통신 과정을 알아보았으며 다음 포스팅은 **인증서 구조** 를 주제로 이어가겠습니다.
+
+---
+
+## 참고 자료
+
+> - [HTTPS 통신과정 쉽게 이해하기 #3(SSL Handshake, 협상)](https://aws-hyoh.tistory.com/39)
+> - [SSL/TLS #2, 인증서 검증과 Chain](https://aws-hyoh.tistory.com/26)
+> - [웹사이트 보안을 위한 방법, SSL이란? (feat. SSL과 HTTPS의 차이)](https://blog.naver.com/PostView.naver?blogId=skinfosec2000&logNo=222135874222&redirect=Dlog&widgetTypeCall=true&directAccess=false)
+> - [154. [Security] SSL과 인증서 구조 이해하기 : CA (Certificate Authority) 를 중심으로](https://m.blog.naver.com/alice_k106/221468341565)

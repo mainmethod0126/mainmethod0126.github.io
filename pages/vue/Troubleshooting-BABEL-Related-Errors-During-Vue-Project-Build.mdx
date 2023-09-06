@@ -1,0 +1,132 @@
+# vue project build시에 발생한 BABEL관련 오류 해결해보기
+
+회사에서 포지션은 백엔드 개발자지만, 급하게 vue2로 만들어진 프론트 엔드 프로젝트를 빌드할 상황이 있어서 빌드를 하였는데, 여러개의 WARING이 발견되어 해당 경고가 왜 발생했는지와 해결방법을 알아보았습니다.
+
+## 발생한 경고
+
+### 첫번째 경고
+
+```js
+-  Building for production...
+[BABEL] Note: The code generator has deoptimised the styling of /home/vsts/work/1/s/node_modules/vuetify/dist/vuetify.js as it exceeds the max of 500KB.
+ WARNING  Compiled with 4 warnings7:51:44 AM
+```
+
+위 경고가 가장 첫번째 발생한 경고입니다.
+
+가장 먼저 눈에 띄이는 키워드는 `BABEL` 과 `MAX OF 500KB` 두 키워드인데 하나는 딱 봐도 용량 관련된 내용이고,  `BABEL`이라는 키워드는 너무 낯선 단어입니다 오류를 파악하기 위해서는 Babel 어떤 친구인지 대략적으로라도 알아야할 것 같습니다.
+
+#### BABEL
+
+`Babel`은 최신 JavaScript 코드가 `구버전의 브라우저`에서도 동작할 수 있도록 컴파일해주는 `컴파일러`입니다.
+
+예를 들어 최신 버전의 JavaScript(ECMAScript 2015 또는 ES6)의 기능인 `클래스 구문`을 사용하는 다음 JavaScript 코드가 있다고 가정합니다.
+
+```js
+class Rectangle {
+  constructor(width, height) {
+    this.width = width;
+    this.height = height;
+  }
+
+  getArea() {
+    return this.width * this.height;
+  }
+}
+
+```
+
+이 코드는 `클래스 구문을 지원하지 않는 이전 브라우저`에서는 작동하지 않습니다.
+
+이러한 환경에서 작동하도록 하기 위해 Babel을 사용하여 이전 브라우저에서 작동하는 버전으로 코드를 변환할 수 있습니다.
+
+이렇게 하려면 먼저 Babel과 필요한 사전 설정 또는 플러그인을 설치해야 합니다.
+
+그런 다음 Babel 명령줄 도구를 사용하여 코드를 트랜스파일할 수 있습니다.
+
+```js
+babel src/rectangle.js --out-file dist/rectangle.js
+```
+
+이렇게 하면 원본 코드의 트랜스파일된 버전이 포함된 새 파일 `dist/rectangle.js` 가 생성됩니다
+
+다음은 트랜스파일된 코드의 예입니다.
+
+```js
+"use strict";
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var Rectangle = /*#__PURE__*/function () {
+  function Rectangle(width, height) {
+    _classCallCheck(this, Rectangle);
+
+    this.width = width;
+    this.height = height;
+  }
+
+  _createClass(Rectangle, [{
+    key: "getArea",
+    value: function getArea() {
+      return this.width * this.height;
+    }
+  }]);
+
+  return Rectangle;
+}();
+```
+
+자 이제 Babel이라는 친구가 대략적으로 어떤 친구인지 알게되었습니다.
+
+그럼 다시 한번 경고 구문을 보겠습니다.
+
+```js
+The code generator has deoptimised the styling of /home/vsts/work/1/s/node_modules/vuetify/dist/vuetify.js as it exceeds the max of 500KB.
+```
+
+> "vuetify.js 가 500KB를 초과해서 스타일 최적화를 진행하지 않을게."
+
+아~ **"용량이커서 컴파일 과정에서 스타일 관련 최적화를 스킵했다"** 라고 읽힙니다.
+
+여기서 스타일은 `CSS`를 의미합니다.
+
+다시 말해 용량이 기준보다 커 `CSS`코드의 최적화를 진행하지 않았다 라는 말입니다.
+
+위 경고로 인해 javascript 구문이 정상 동작하지 않거나 하진 않기 때문에 무시가 가능한 경고입니다.
+
+### 두번째 경고
+
+```js
+chunk kiosk~ndaLogs [mini-css-extract-plugin]
+Conflicting order. Following module has been added:
+ * css ./node_modules/css-loader/dist/cjs.js??ref--9-oneOf-1-1!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/src??ref--9-oneOf-1-2!./node_modules/sass-loader/dist/cjs.js??ref--9-oneOf-1-3!./node_modules/cache-loader/dist/cjs.js??ref--1-0!./node_modules/vue-loader/lib??vue-loader-options!./src/components/modal/Paging.vue?vue&type=style&index=0&id=7d6372a3&prod&lang=scss&scoped=true&
+despite it was not able to fulfill desired ordering with these modules:
+ * css ./node_modules/css-loader/dist/cjs.js??ref--9-oneOf-1-1!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/src??ref--9-oneOf-1-2!./node_modules/sass-loader/dist/cjs.js??ref--9-oneOf-1-3!./node_modules/cache-loader/dist/cjs.js??ref--1-0!./node_modules/vue-loader/lib??vue-loader-options!./src/components/modal/Gallery.vue?vue&type=style&index=0&id=bf858768&prod&lang=scss&scoped=true&
+   - couldn't fulfill desired order of chunk group(s) ndaLogs
+   - while fulfilling desired order of chunk group(s) kiosk
+```
+
+위 경고에서는 `Conflicting` 이라는 키워드가 눈에 띄입니다
+
+해당 키워드를 번역해보면 `서로 싸우는` 라는 의미로 번역되는데.
+
+추가되는 내용을 보면 느낌적인 느낌으로 모듈간의 충돌이 발생한 것 같습니다.
+
+또다른 키워드로는 `chunk` 라는 키워드를 볼 수 있는데, 단순하게 사전적 의미로는 `하나의 큰 덩어리` 를 의미합니다.
+
+예를 들어 이사를 위해 많은 짐들을 옮겨야하는 상황에서 몇개의 박스 단위로 짐들을 나눠 담을때 이 하나의 박스를 `chunk` 라고 칭할 수 있습니다.
+
+이런 chunk가 현재 경고에는 webpack에서 쓰이는 chunk 를 의미하는데, 프론트 엔드 개발 기반 지식 없는 본인을 위해서라도 `webpack` 에 대하여 잠시 짚고 넘어가겠습니다.
+
+### Webpack
+
+#### bundle
+
+webpack을 이해하기 위해서는 bundle에 대한 개념이 있어야합니다.
+
+`bundle`은 웹 애플리케이션 또는 기타 클라이언트 측 코드에 필요한 모든 코드와 리소스를 포함하는 단일 파일 또는 소수의 파일입니다. 
+

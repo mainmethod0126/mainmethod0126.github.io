@@ -10,9 +10,14 @@
     "type": "separator"
   },
   "common": "common",
+  "linux": "linux",
   "cpp": "c++",
   "elasticsearch": "elasticsearch",
   "java": "java",
+  "nginx": "nginx",
+  "security": "security",
+  "kafka": "kafka",
+  "vue": "vue",
   "serialized-data-structure": "serialized data structure",
   "tistory": {
     "title": "Tistory Blog ↗",
