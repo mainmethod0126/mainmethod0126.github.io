@@ -13,6 +13,7 @@
   "cpp": "c++",
   "elasticsearch": "elasticsearch",
   "java": "java",
+  "serialized-data-structure": "serialized data structure",
   "tistory": {
     "title": "Tistory Blog ↗",
     "type": "page",

@@ -42,6 +42,9 @@ const config: DocsThemeConfig = {
       if (title === 'java') {
         return <>📒 {title}</>
       }
+      if (title === 'serialized data structure') {
+        return <>📒 {title}</>
+      }
       if (type === 'page') {
         return <>↗️ {title}</>
       }
