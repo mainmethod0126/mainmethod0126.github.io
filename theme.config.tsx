@@ -39,7 +39,25 @@ const config: DocsThemeConfig = {
       if (title === 'common') {
         return <>📒 {title}</>
       }
+      if (title === 'linux') {
+        return <>📒 {title}</>
+      }
       if (title === 'java') {
+        return <>📒 {title}</>
+      }
+      if (title === 'nginx') {
+        return <>📒 {title}</>
+      }
+      if (title === 'security') {
+        return <>📒 {title}</>
+      }
+      if (title === 'vue') {
+        return <>📒 {title}</>
+      }
+      if (title === 'kafka') {
+        return <>📒 {title}</>
+      }
+      if (title === 'serialized data structure') {
         return <>📒 {title}</>
       }
       if (type === 'page') {
