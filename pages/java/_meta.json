@@ -1,3 +1,6 @@
 {
-  "Analyzing-JAVA-Memory-Leak-Issues": "JAVA 메모리 누수 이슈 분석"
+  "Analyzing-JAVA-Memory-Leak-Issues": "JAVA 메모리 누수 이슈 분석",
+  "JDBC-DataSource-Connection-Statement-Savepoint": "JDBC, DataSource, Connection, Statement, Savepoint",
+  "What-is-a-Servlet-in-JAVA": "자바에서 말하는 Servlet 이란?",
+  "Dependency-Conflict-Testing-in-a-JAVA-Project": "JAVA 프로젝트에서 의존성 충돌 테스트"
 }

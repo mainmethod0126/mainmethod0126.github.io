@@ -45,6 +45,9 @@ const config: DocsThemeConfig = {
       if (title === 'java') {
         return <>📒 {title}</>
       }
+      if (title === 'rdb') {
+        return <>📒 {title}</>
+      }
       if (title === 'nginx') {
         return <>📒 {title}</>
       }
@@ -52,6 +55,9 @@ const config: DocsThemeConfig = {
         return <>📒 {title}</>
       }
       if (title === 'vue') {
+        return <>📒 {title}</>
+      }
+      if (title === 'docker') {
         return <>📒 {title}</>
       }
       if (title === 'kafka') {

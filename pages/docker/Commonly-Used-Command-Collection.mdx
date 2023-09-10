@@ -1,0 +1,83 @@
+# docker 자주쓰는 명령어 모음
+
+자꾸 까먹길래 메모 목적으로 작성합니다.
+
+#### 사설 hub 실행
+
+```bash
+docker run -d --name <registry 이름> -p <호스트OS PORT:실제 컨테이너 이미지의 PORT> --restart=always registry
+
+// sample
+docker run -d --name test_registry -p 5000:5000 --restart=always registry
+```
+
+#### 사설 hub에 이미지 배포
+
+```bash
+docker image push <사설 hub ip:port>/<image repo>:<image tag>
+
+// sample
+docker image push 10.81.10.175:5000/test-centos7:1.0.0
+```
+
+#### 사설 hub에 등록된 이미지 목록 확인
+
+```bash
+docker image push <사설 hub ip:port>/<image repo>:<image tag>
+
+// sample
+docker image push 10.81.10.175:5000/test-centos7:1.0.0
+```
+
+#### 컨테이너 생성과 동시에 실행하면서 /bin/bash 실행시키기
+
+```bash
+ docker run -it --name my-ctn my-image /bin/bash
+```
+
+#### 실행중인 컨테이너 종료 시키기
+
+```bash
+docker rm <컨테이너 ID>
+```
+
+#### Attach된 컨테이너 터미널 빠져나오기
+
+실제로 컨테이너가 종료된건 아님
+
+```bash
+단축키 : ctrl + p + q
+```
+
+#### 백그라운드로 실행중인 컨테이너에 Attach 하기
+
+```bash
+docker attach <컨테이너 이름>
+```
+
+#### 호스트에 있는 파일을 실행중인 Container 에 옮기기/업로드하기
+
+```bash
+docker cp <호스트에 존재하는 파일 경로> <컨테이너 이름>:<컨테이너쪽 파일이 위치할 경로>
+```
+
+#### 이미 종료된 컨테이너 재실행 시키면서 특정 프로세스 실행시키는 동시에 attach 시키는 방법
+
+```bash
+docker container exec -it my-ubuntu-container bash
+```
+
+#### 컨테이너 삭제하기
+
+```bash
+docker rm <컨테이너 id>
+```
+
+#### 사설 Docker Hub에 로그인하기
+
+```bash
+// docker login -u <id> -p <password> <docker hub address>
+
+//sample
+docker login -u wusub -p wusub123 wusub.azure.io
+```

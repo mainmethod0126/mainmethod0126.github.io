@@ -1,0 +1,132 @@
+# JDBC DataSource Connection Statement Savepoint
+
+JDBC 를 사용한 계기가 있어 DataSource,Connection,Statement,Savepoint 에 대하여 잠깐 정리하고 넘어가려합니다.
+
+---
+
+## JDBC를 이용한 쿼리 사용 예시
+
+JDBC를 이용하여 쿼리를 사용하기 위해서는 아래와 같은 예시를 들어볼 수 있습니다.
+
+```java
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Savepoint;
+import java.sql.Statement;
+
+import javax.sql.DataSource;
+
+public class TransactionExample {
+  private DataSource dataSource;
+
+  public TransactionExample(DataSource dataSource) {
+    this.dataSource = dataSource;
+  }
+
+  public void executeTransaction() {
+    try (Connection conn = dataSource.getConnection()) {
+      // Set auto-commit to false
+      conn.setAutoCommit(false);
+
+      // Set savepoint 1
+      Savepoint sp1 = conn.setSavepoint();
+
+      // Execute statement 1
+      try ( Statement stmt1 = conn.create Statement()) {
+        String sql1 = "UPDATE table SET col1 = 2 WHERE col2 = 'a'";
+        stmt1.executeUpdate(sql1);
+      }
+
+      // Set savepoint 2
+      Savepoint sp2 = conn.setSavepoint();
+
+      // Execute statement 2
+      try ( Statement stmt2 = conn.createStatement()) {
+        String sql2 = "INSERT INTO table (col1, col2) VALUES (3, 'b')";
+        stmt2.executeUpdate(sql2);
+      }
+
+      // Rollback to savepoint 1
+      conn.rollback(sp1);
+
+      // Commit transaction
+      conn.commit();
+    } catch (SQLException se) {
+      // Rollback on error
+      conn.rollback();
+      se.printStackTrace();
+    }
+  }
+}
+```
+
+자 위 코드를 베이스로 몇가지 키워드에 대하여 알아보겠습니다.
+
+---
+
+## DataSource
+
+```java
+private DataSource dataSource;
+```
+
+DataSource 는 쉽개 말해 DB 연결을 하고자할 때 필요한 정보들을 갖고있는 구조체입니다.
+Db연결을 위한 URL 정보, 접속을 위한 계정정보, 커넥션 풀 사이즈 등등 메타정보를 갖고있습니다.
+
+그리고 그 정보로 부터 Connection 객체를 얻을 수 있도록 도와주는 역할도 포함합니다.
+만약 정보가 잘못된 정보 (URL 이 틀리리거나, 접속 정보가 다르거나) 할 경우에 예외도 여기서 발생해줍니다.
+
+### 사용법
+
+보통은 JavaBean으로 등록하고 사용합니다.
+
+```java
+BasicDataSource dataSource = new BasicDataSource();
+dataSource.setDriverClassName("org.postgresql.Driver");
+dataSource.setUrl("jdbc:postgresql://localhost:5432/mydatabase");
+dataSource.setUsername("user");
+dataSource.setPassword("password");
+```
+
+위와 같이 등록하고 전역 객체를 활용하는 방식으로 사용됩니다.
+
+---
+
+## Connection
+
+```java
+try (Connection conn = dataSource.getConnection()) {
+  //~~~
+}
+```
+
+DB 연결 객체입니다.
+
+dataSource 에 정의되어있는 DB 정보를 토대로 커넥션을 생성하여 Connection 객체를 얻는 방식이 보편적이며,
+커넥션 타임아웃, 트랜잭션, 트랜잭션 커밋, 트랜잭션 롤백 등을 지원합니다.
+
+보통 하나의 트랜잭션에 하나의 Connection 를 생성하고 동일한 트랙잭션 내에서는 Connection를 인자로 넘기면서 공통으로 사용하게 됩니다.
+
+---
+
+## Statement
+
+```java
+try ( Statement stmt1 = conn.create Statement()) {
+  String sql1 = "UPDATE table SET col1 = 2 WHERE col2 = 'a'";
+  stmt1.executeUpdate(sql1);
+}
+```
+
+Statement 객체는 쿼리를 실행하고, 결과를 저장하고 확인할 수 있는 객체입니다.
+
+보통 재활용되지 않고 쿼리 실행이 필요할 경우에 바로바로 생성하여 사용합니다.
+그 이유는 쿼리 결과를 다중으로 저장하지 않고 직접 쿼리 결과만 저장하기 때문입니다.
+
+---
+
+## Savepoint
+
+트랙잭션 시점 저장을위한 객체입니다.
+
+트랜잭션의 경우 rollback 진행 시 트랜잭션 시작 시점으로 복원되는데, Savepoint 를 이용하여 트랜잭션 시작 시점이 아닌, 트랜잭션 내부에서 원하는 시점으로 rollback을 시도할 수 있게 해줍니다.

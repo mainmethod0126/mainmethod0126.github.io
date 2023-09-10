@@ -1,0 +1,24 @@
+# RDB Sequence와 AutoIncrement
+
+## Sequence
+
+sequence 는 일종의 객체이며,
+
+rollback 시 한번 증가된 값에 대해서는 rollback할 수 없으며
+
+여러 테이블에서 공유하여 사용할 수 있습니다.
+
+그렇기 때문에 a테이블의 a_field 를 temp_sequence 라는 시퀀스를 통하여 값을 증분 시키고,
+b테이블의 b_field 를 똑같은 temp_sequence 라는 시퀀스를 통하여 값을 증가시켰을때,
+
+a_filed 에서 이미 소비한 숫자들은 b테이블에서 사용할 수 없습니다.
+
+예르들어 a테이블의 a_field가 1부터 증가하여 순차적으로 1,2,3,4,5 라는 숫자를 사용한 후
+b테이블의 b_filed가 3이라는 데이터를 시작으로 3,4,5,6,7 이렇게 사용하고자 할 때
+3,4,5 는 이미 a_field에서 소비한 숫자라 6 부터 사용할 수 있습니다.
+
+## AutoIncrement
+
+이와 반대로 auto_increment 는 테이블간에 증가되는 일련의 값들이 테이블간에 공유되지않고 선택된 필드에 대해서만 적용되기에
+
+b_filed도 3,4,5,6,7 까지의 모든 숫자를 사용할 수 있습니다.

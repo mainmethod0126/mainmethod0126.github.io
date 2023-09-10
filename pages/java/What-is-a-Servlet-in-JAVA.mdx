@@ -1,0 +1,135 @@
+## 서블릿
+
+`서블릿`은 실행 시킬 수 있는 프로그램이 아니라 클라이언트의 요청을 처리하고, 그 결과를 반환하는 `기술`을 말합니다.
+
+저희가 사용하는 JAVA는 OOP를 위한 언어로, 어떠한 기술을 구현할때 `클래스` 를 사용하여 구현합니다.
+
+즉, `서블릿`이라는 말은 `웹 요청을 처리하는 로직이 구현된 단순 클래스` 입니다.
+별도의 서비스 같은게 아니죠.
+
+그럼 이 단순 로직 덩어리 클래스를 어떻게 사용할 수 있을까요?
+
+이때 `WAS(Web Application Server)`라는 녀석이 등장합니다.
+
+---
+
+## Web Application Server
+
+WAS는 웹 애플리케이션을 실행하기 위한 여러 가지 기능을 제공하는 소프트웨어를 의미합니다.
+이러한 기능에는 웹 서버, `서블릿 컨테이너`, JSP 컨테이너, 데이터베이스 연동, 트랜잭션 처리, 보안, 클러스터링 등 많은 기능들이 포함되어 있습니다.
+
+우리가 주의깊게 봐야하는 기능은 `서블릿 컨테이너` 입니다.
+
+### 서블릿 컨테이너(Servlet Container)
+
+서블릿 컨테이너는 우리가 위에 정의한 `서블릿` 즉 `웹 요청을 처리하는 로직이 구현된 단순 클래스` 를 찾아 객체로 만들어 줍니다.
+
+ 이렇게 만들어진 객체를 `서블릿 객체` 라고 부르며, 서블릿 컨테이너는 이 서블릿 객체에 대한 `생성, 초기화, 요청 처리, 소멸 (서블릿 객체의 생명주기)` 등의 중요한 작업을 수행하며, 이를 위한 기능들을 제공합니다.
+
+웹 서버(아파치, Nginx 등)로 부터 요청이 들어오면 서블릿 객체를 `생성`하고 `초기화`한 후 요청된 `URL을 파싱`하여 해당 요청을 처리할 수 있는 `서블릿 객체의 메서드를 호출`합니다.
+
+아래는 서블릿 컨테이너가 제공하는 주요 기능들 입니다.
+
+- **서블릿 생명주기 관리:** 서블릿 컨테이너는 서블릿의 객체 생성, 초기화, 요청 처리, 소멸 등의 생명주기를 관리합니다.
+- **멀티스레딩 지원:** 서블릿 컨테이너는 여러 클라이언트의 요청을 동시에 처리하기 위해 멀티스레딩을 지원합니다.
+- **요청 및 응답 객체 제공:** 서블릿 컨테이너는 HttpServletRequest와 HttpServletResponse 클래스를 제공하여 서블릿이 클라이언트의 요청을 받고 응답을 반환하는 데 필요한 기능을 제공합니다.
+- **세션 관리:** 서블릿 컨테이너는 클라이언트 세션을 관리하고, 세션 ID를 생성하고, 세션 데이터를 저장하고, 세션 유효시간을 관리하는 등의 기능을 제공합니다
+- **보안 관리:** 서블릿 컨테이너는 클라이언트의 인증 및 권한 부여를 관리하고, 보안 기능을 제공합니다.
+- **JSP 지원:** 서블릿 컨테이너
+
+#### 서블릿 클래스를 찾는 순서
+
+    1. WAR 또는 JAR의 압축을 풉니다
+    2. WEB-INF/web.xml 파일을 찾습니다.
+    3. web.xml 를 파싱하여 servlet 에 대한 정보들을 찾아 클래스 로더를 통해 로드 후 인스턴스화 (객체 생성)합니다.
+
+#### web.xml 구성
+
+```xml
+    <!-- web.xml sample -->
+    <web-app>
+        <servlet>
+            <servlet-name>HelloServlet</servlet-name>
+            <servlet-class>com.example.HelloServlet</servlet-class>
+        </servlet>
+
+        <servlet-mapping>
+            <servlet-name>HelloServlet</servlet-name>
+            <url-pattern>/hello</url-pattern>
+        </servlet-mapping>
+    </web-app>
+```
+
+- **\<servlet\>** : 서블릿 컨테이너에서 사용될 서블릿 클래스를 정의하는 역할을 합니다, 서블릿 이름, 서블릿 클래스명, 초기화 매개변수 등 서블릿과 관련된 정보를 정의할 수 있습니다.
+
+- **\<servlet-name\>** : 서블릿 컨테이너가 서블릿을 관리하기 위한 고유한 이름입니다.
+이 서블릿 이름으로 아래 나올 `<servlet-mapping>` 과의 연결을 설정할 수 있습니다.
+
+- **\<servlet-class\>** : 서블릿이 구현되어있는 클래스입니다. 해당 클래스로 서블릿 객체가 생성되며, 해당 객체는 `<servlet-name>`으로 관리됩니다.
+
+- **\<servlet-mapping\>** : 클라이언트의 요청을 처리하기 위해 어떤 서블릿 클래스를 사용할 지를 정의하는 역할을 합니다. URL 패턴과 해당 패턴에 대응하는 위에서 설명한 `서블릿 이름<servlet-name>`을 정의할 수 있습니다.
+
+- **\<url-pattern\>** : 서블릿과 매핑될 URL 패턴입니다. 클라이언트가 해당 패턴의 URL로 요청을 했을 경우 같은`<servlet-mapping>` 내부에 정의된 `<servlet-name>`으로 서블릿을 찾아 요청을 처리합니다.
+
+---
+
+## 실제로 Servlet 을 구현할 때
+
+개발자가 직접 서블릿을 구현할 때는 보통 `javax.servlet.http` 패키지 하위에 있는 `HttpServlet` 이라는 클래스를 상속받아 구현하게 됩니다.
+
+이때 Java Servlet API 규정에 따라 필수로 구현해야하는 메소드들이 존재하는데,
+
+doGet(), doPost() 입니다.
+
+그 이유는 HTTP METHOD 중 GET과 POST는 `HTML form` 에서 지원하는 메소드이고 최근 대세로 사용되는 RESTful API등에서 사용하는 PUT, DELETE 등의 메소드등은 HTML form 에서 지원을 안하기 때문입니다.
+
+두 메소드 모두 `javax.servlet.http.HttpServlet` 에 정의된 메소드이며, 클라이언트가 요청한 `HTTP 메소드와 매핑됩니다.`
+
+이외의 HTTP 메소드들도 `javax.servlet.http.HttpServlet` 에 정의되어 있으며 필요에 따라 개발자가 구현하여 사용하면 됩니다.
+
+예시 코드를 봐보겠습니다.
+
+```java
+@Override
+protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+        throws ServletException, IOException {
+    // GET 요청 처리
+}
+```
+
+이런 식으로 doGet() 메소드를 `재정의` 할 수 있는데, 클라이언트가 `HTTP GET 메소드` 로 요청을 하였을 때 요청 `URL`에 매핑되는 서블릿 객체의 이 `doGet()` 메소드가 호출됩니다.
+
+### URL 매핑 방식
+
+서블릿 객체와 클라이언트의 요청을 매핑할때는 `URL`이 기준이 되는데 이때 매핑을 위한 방식이 두개 존재합니다.
+
+#### 1. 서블릿 이름을 통한 매핑
+
+`web.xml`에 정의된 `<servlet-mapping>` 태그 부분의 `<servlet-name>` 과 일치하는 서블릿 객체를 찾아 클라이언트 요청을 전달합니다.
+
+#### 2. @WebServlet 어노테이션을 이용한 매핑
+
+어노테이션을 이용하여 `web.xml` 에 `<servlet-mapping>.<servlet-name>` 를 생략하여도 서블릿 객체와 클라이언트 요청을 매핑할 수 있습니다.
+
+```java
+@WebServlet("/hello")
+public class HelloServlet extends HttpServlet {
+  // ...
+}
+```
+
+
+
+
+
+
+
+### HttpServletRequest, HttpServletResponse
+
+구현된 메소드를 보면 매개변수 `HttpServletRequest`, `HttpServletResponse` 이라는 타입의 매개변수를 받고있는데, 이 타입들은 위에서 알아봤던 `서블릿 컨테이너의 여러가지 기능` 중 `요청 및 응답 객체 제공` 기능을 위한 JAVA 클래스입니다.
+
+`HttpServletRequest` 는 클라이언트의 `요청`을 **서블릿 객체에 전달하는 용도 (서블릿 컨테이너 -> 서블릿 객체)** 로 사용되며,
+`HttpServletResponse` 는 클라이언트 요청에 대한 서블릿의 처리 결과를 `응답`하는데 **(서블릿 객체 -> 서블릿 컨테이너)** 사용됩니다.
+
+두 객체 모두 `서블릿 컨테이너에서 생성` 하며, 클라이언트의 요청에 해당하는 서블릿 객체의 메소드를 호출할 때 인자로 전달됩니다.
+

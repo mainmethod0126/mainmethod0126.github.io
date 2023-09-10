@@ -14,10 +14,12 @@
   "cpp": "c++",
   "elasticsearch": "elasticsearch",
   "java": "java",
+  "rdb": "rdb",
   "nginx": "nginx",
   "security": "security",
   "kafka": "kafka",
   "vue": "vue",
+  "docker": "docker",
   "serialized-data-structure": "serialized data structure",
   "tistory": {
     "title": "Tistory Blog ↗",
