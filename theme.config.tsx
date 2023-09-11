@@ -69,7 +69,7 @@ const config: DocsThemeConfig = {
       if (type === 'page') {
         return <>↗️ {title}</>
       }
-      return <>📝 {title}</>
+      return <>📃 {title}</>
     }
   },
 }
