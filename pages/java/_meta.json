@@ -2,5 +2,6 @@
   "Analyzing-JAVA-Memory-Leak-Issues": "JAVA 메모리 누수 이슈 분석",
   "JDBC-DataSource-Connection-Statement-Savepoint": "JDBC, DataSource, Connection, Statement, Savepoint",
   "What-is-a-Servlet-in-JAVA": "자바에서 말하는 Servlet 이란?",
-  "Dependency-Conflict-Testing-in-a-JAVA-Project": "JAVA 프로젝트에서 의존성 충돌 테스트"
+  "Dependency-Conflict-Testing-in-a-JAVA-Project": "JAVA 프로젝트에서 의존성 충돌 테스트",
+  "What-happens-if-you-do-not-specify-a-version-in-Gradle-dependencies": "Gradle 의존성에서 version을 명시 하지 않았을 경우에 어떻게 되나"
 }

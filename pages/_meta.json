@@ -20,6 +20,7 @@
   "kafka": "kafka",
   "vue": "vue",
   "docker": "docker",
+  "spring": "spring",
   "serialized-data-structure": "serialized data structure",
   "tistory": {
     "title": "Tistory Blog ↗",

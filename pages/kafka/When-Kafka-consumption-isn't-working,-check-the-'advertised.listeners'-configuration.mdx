@@ -1,0 +1,49 @@
+# Kafka 컨슈밍이 안될때는 advertised.listeners 설정을 확인하라
+
+서버에 kafka를 실행시키고 로컬 PC(별도의 외부 PC)에서 서버의 kafka topic 을 구독하려하였는데 이리저리 해보아도 구독에 실패하다가 원인을 찾게되어 기록을 남깁니다.
+
+## 일단 결론
+
+원인은 kafka server.properties의 내용중 advertised.listeners 라는 녀석을 advertised.listeners==PLAINTEXT://11.22.33.123:9092  
+과 같이 IP를 명시하였더니 컨슘에 성공하였습니다 그렇다면 이 설정이 뭐길래 외부에서 컨슘하는걸 가능하게 할까요?
+
+## advertised.listeners ? 넌 뭐하는 놈이니?
+
+server.properties를 열어보면
+
+IP와Port 를 넣을 수 있는 값이 두개 있는걸 볼 수 있는대  
+listeners 와 advertised.listeners 입니다.
+
+### listeners
+
+카프카 브로커가 내부적으로 바인딩하는 주소
+
+### advertised.listeners
+
+카프카 프로듀서, 컨슈머에게 노출할 주소. 설정하지 않을 경우 디폴트로 listeners 설정을 따른다.
+
+그렇다면 왜 내부적으로 바인딩하는 주소와, 외부에 노출할 주소 두개로 나눠져있는 이유가 있을 겁니다.  
+이유가 뭔지 살펴보겠습니다.
+
+## listeners 와 advertised.listeners 가 별도로 존재하는 이유
+
+만약 우리의 Kafka 서버가 3개의 랜카드를 장착중이고 A,B,C 라는 IP를 각각 부여 받아 사용중이고,  
+해당 서버에는 Kafka 서비스와, 그 Kafka의 Topic을 구독중인 별도의 Test라는 서비스가 실행중이라고 생각해봅시다.  
+우리의 Test 서비스는 Kafka 서비스와 같은 PC에서 구동중이기에 localhost 또는 127.0.0.1 이라는 주소로 kafka에 접근이 가능합니다.
+
+하지만 만약 A,B,C 라는 IP로 접근을 하려는 외부 서비스들이 있을 경우 특정 IP로 접근한 요청들은 Kafka에 접근하지 못하게 해야하는 경우가 있습니다.
+
+예를들어 우리의 서버는 localhost로 접근하는 내부 서비스와 B라는 IP로 접근하는 외부 서비스만 Kafka에 접근 할 수 있게 하고 싶은경우
+
+```text
+listeners=PLAINTEXT://localhost:9092
+advertised.listeners==PLAINTEXT://B:9092
+```
+
+라고 지정할 수 있겠습니다.
+
+이렇게 내부와 외부에 오픈할 특정 IP를 별도로 두기 위해서 listeners, advertised.listeners 가 존재합니다.
+
+## 끝으로
+
+내용이 부실합니다.. 포스팅에 문제가 있거나 제가 잘못알고 있는 내용이 있다면 언제든지 답글 남겨주시면 정말 감사하겠습니다!

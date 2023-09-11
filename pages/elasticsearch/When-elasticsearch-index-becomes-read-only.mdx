@@ -1,0 +1,48 @@
+# elasticsearch index가 읽기전용이 되었을 때
+
+엘라스틱 서치 운영중에 발생한 index read-only 전환 현상에 대하여 기록합니다.  
+  
+어느날 엘라스틱 서치에서 아래와 같은 에러가 발생하였습니다.
+
+```
+org.elasticsearch.cluster.block.ClusterBlockException: index [file-log-000001] blocked by: [TOO_MANY_REQUESTS/12/index read-only / allow delete (api)]
+```
+
+## 이유
+
+해당 에러에 대하여 검색결과 디스크 용량이 어느 수준으로 쌓이게되면 엘라스틱 서치 설정에 의하여 인덱스가 read only로 바뀌게 됩니다.  
+설정은 사용자가 변경할 수 있으며 설정에 대한 상세 내용은 아래 링크를 통하여 확인하실 수 있습니다.
+
+관련 내용 링크 : [https://www.elastic.co/guide/en/elasticsearch/reference/6.7/disk-allocator.html](https://www.elastic.co/guide/en/elasticsearch/reference/6.7/disk-allocator.html)
+
+이렇게 read only가 되었을때 다시 정상적으로 index를 사용하기 위해서는 수동으로 해제해야합니다.
+
+## 방법
+
+### 특정 인덱스의 read only를 해제하는 방법
+
+index\_name에 원하는 특정인덱스의 이름을 적습니다.
+
+```
+PUT <index_name>/_settings
+{
+    "index": {
+        "blocks": {
+        "read_only_allow_delete": "false"
+        }
+    }
+}
+```
+
+### 모든 인덱스의 read only를 해제하는 방법
+
+```
+PUT _all/_settings
+{
+    "index": {
+        "blocks": {
+        "read_only_allow_delete": "false"
+        }
+    }
+}
+```

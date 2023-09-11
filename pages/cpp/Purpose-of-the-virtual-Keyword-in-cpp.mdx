@@ -1,0 +1,60 @@
+# C++ 에서 virtual 키워드의 용도
+
+클래스를 상속받았고 업캐스팅이 되었을 때 어떤 함수를 콜 하는지 알 수 있음
+
+하나의 이름으로 여러작업을 할 수 있는 **다형성** 가능
+
+런타임 시 컴퓨터 입장에서
+
+어? virtual 가 붙어있네? 이거 실제 객체 맞어? 맞네
+
+어? virtual 가 붙어있네? 이거 실제 객체 맞어? 아니네 다른 놈이네
+
+이렇게 컴파일 단계에서 어떤 함수가 실행될 지 정해지지않고 런타임 시에 정해지는 것을 **동적 바인딩** 이라고 함
+
+## 예시
+
+```cpp
+class Parents
+{
+  virtual void Function() 
+  {
+    std::cout << "부모" << std::endl; 
+  }
+}
+
+class A : public Parents
+{
+  void Function() override
+  {
+    std::cout << "A" << std::endl; 
+  }
+}
+
+class B : public Parents
+{
+  void Function() override
+  {
+    std::cout << "B" << std::endl; 
+  }
+}
+
+int main(0
+{
+    Parents* pParents = new Parents();
+    Parents* pP_A = new A();
+    Parents* pP_B = new B();
+
+    pParents->Function();
+    pP_A->Function();
+    pP_B->Function();
+}
+```
+
+## 출력 결과  
+
+```
+부모  
+A  
+B
+```

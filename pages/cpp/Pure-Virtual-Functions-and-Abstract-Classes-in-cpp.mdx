@@ -1,0 +1,101 @@
+# C++ 에서의 순수 가상함수와 추상클래스
+
+## 순수 가상함수
+
+### 정의
+함수의 내부가 구현되어 있지 않은 형태의 가상함수이며 일반 가상함수를 = 0 또는 = NULL 로 초기화 하면서 생성한다  
+
+### 특징
+순수 가상함수를 가진 클래스를 상속받은 자식 클래스는 부모의 순수 가상함수를 꼭! 오버라이딩하여 구현해야한다.
+
+## 추상 클래스
+
+### 정의
+하나 이상의 순수 가상함수를 포함한 클래스를 추상 크래스라 한다  
+
+### 특징
+추상 클래스를 상속받은 자식 클래스는 꼭! 추상 클래스가 포함하고 있는 순수 가상함수를 오버라이딩하여 구현해야하며  
+다형성의 집합(배열, 벡터) 등을 구현하기 위하여 필요하다.
+
+## 추상 클래스 및 가상함수 구현과 사용의 예
+
+```cpp
+class Parents
+{
+public:
+    virtual int Function(int a, int b) = 0; // = NULL 이렇게 0 또는 NULL 로 초기화 되어 내부가 구현되지 않은 함수를 순수 가상함수라 한다. 이럴 경우 무조건 상속을 받은 자식 클래스에서 해당 함수를 오버라이딩 해주어야 한다.
+}
+
+class ChildA : public Parents
+{
+public:
+    int Function(int a, int b)
+    {
+        return a + b;
+    }
+}
+
+int main()
+{
+    ChildA* pChildAErr = new Parents; // 에러 발생!!! 추상 클래스로 객체생성 불가!!
+    ChildA* pChildA = new ChildA;
+
+    int nTemp = pChildA->Function(10,20);
+
+    cout << nTemp << endl;
+
+    retunr 0;
+}
+```
+
+```
+결과 : 30 출력
+```
+
+## 추상 클래스를 이용한 다형성의 예 (핵심!!)
+
+```cpp
+class Parents
+{
+public:
+    virtual int Function(int a, int b) = 0; // 순수 가상함수
+}
+
+class ChildA : public Parents
+{
+public:
+    int Function(int a, int b)
+    {
+        return a + b; // A 클래스는 + 함수를
+    }
+}
+
+class ChildB : public Parents
+{
+public :
+    int Function(int a, int b)
+    {
+        return a - b; // B 클래스는 - 함수를
+    }
+}
+
+int main()
+{
+    Parents* pChilds[] = {
+        new ChildA;
+        new ChildB;
+    };
+
+    int nTempA = pChilds[0]->Function(20, 10);
+    int nTempB = pChilds[1]->Function(20, 10);
+
+    cout << nTempA << endl;
+    cout << nTempB << endl;
+
+    retunr 0;
+}
+```
+
+```
+결과 : 30 10
+```

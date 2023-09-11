@@ -1,3 +1,5 @@
 {
-  "Summary-of-Kafka-Basic-Concepts": "kafka 기본개념 정리"
+  "Summary-of-Kafka-Basic-Concepts": "kafka 기본개념 정리",
+  "When-Kafka-consumption-isn't-working,-check-the-'advertised.listeners'-configuration": "Kafka 컨슈밍이 안될때는 advertised.listeners 설정을 확인하라",
+  "It-is-risky-to-use-the-default-path-tmp-for-Linux-Kafka": "리눅스에서 카프카 기본 경로 /tmp 를 그대로 쓰는건 위험하다"
 }

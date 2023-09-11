@@ -1,5 +1,8 @@
 {
     "What-does-symbol-mean-in-Cpp-compilation": "C++ 컴파일에서 심볼은 무슨 말일까?",
-    "The-Compilation-Process-of-Cpp": "C++의 컴파일 과정"
+    "The-Compilation-Process-of-Cpp": "C++의 컴파일 과정",
+    "Purpose-of-the-virtual-Keyword-in-cpp": "C++ 에서 virtual 키워드의 용도",
+    "Pure-Virtual-Functions-and-Abstract-Classes-in-cpp": "C++ 에서의 순수 가상함수와 추상클래스",
+    "Function-Pointer": "함수 포인터"
 }
   

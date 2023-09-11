@@ -1,0 +1,68 @@
+# 리눅스에서 MY-SQL DB 덤프 뜨는 방법
+
+## 전체 DB 덤프
+
+### 형식
+
+```bash
+test@test:~$ mysqldump -u유저아이디 -p패스워드 데이터베이스이름 > 만들고자하는덤프이름.sql
+```
+
+### 예시
+
+```bash
+test@test:~$  mysqldump -uroot -p12345 testDB > testDump.sql
+```
+
+## 특정 테이블 덤프
+
+### 형식
+
+```bash
+test@test:~$ mysqldump -u유저아이디 -p패스워드 데이터베이스이름 테이블1 테이블2 > 만들고자하는덤프이름.sql
+```
+
+## 예시
+```bash
+test@test:~$ mysqldump -uroot -p12345 testDB tableA tableB > testDump.sql
+```
+
+## 캐릭터셋을 변경하여 덤프
+
+### 형식
+
+```bash
+test@test:~$ mysqldump -u유저아이디 -p패스워드 --default-character-set=캐릭터셋종류 데이터베이스이름 테이블1 테이블2 > 만들고자하는덤프이름.sql
+```
+
+### 예시
+
+```bash
+test@test:~$ mysqldump -uroot -p12345 --default-character-set=euckr testDB tableA tableB > testDump.sql
+```
+
+```bash
+test@test:~$ mysqldump -uroot -p12345 --default-character-set=utf8 testDB tableA tableB > testDump.sql
+```
+
+## 특정 테이블만 제외하고 덤프
+
+### 형식
+
+```bash
+test@test:~$ mysqldump -u유저아이디 -p패스워드 데이터베이스이름 --ignore-table=데이터베이스이름.테이블1 --ignore-table=데이터베이스이름.테이블2 > 만들고자하는덤프이름.sql
+```
+
+### 예시
+
+```bash
+test@test:~$ mysqldump -uroot -p12345 testDB --ignore-table=testDB.tableA --ignore-table=testDB.tableB > testDump.sql 
+```
+
+## 특정 서버를 지정하여 DB 덤프
+
+### 형식
+
+```bash
+test@test:~$ mysqldump -h 192.168.0.1 -P8080 -u유저아이디 -p패스워드 데이터베이스이름 > 만들고자하는덤프이름.sql
+```

@@ -1,0 +1,47 @@
+# 함수 포인터
+
+C++에서 함수의 이름은 함수의 메모리 주소 그 자체를 가리킨다.  
+형식 : `리턴타입(\* 객체이름)(매개변수타입 매개변수이름);`
+
+---
+
+## 함수 포인터 변수 선언의 예
+
+```cpp
+int FunctionA(int arg)
+{
+     return 0;
+}
+
+int main()
+{
+    int (* pFunction)(int);
+    pFunction = FunctionA;
+    pFunction(5);
+}
+```
+
+## 함수 포인터를 매개변수로 받는 함수의 예
+
+```cpp
+int FunctionA(int (*pFunction)(int))
+{
+    pFunction(N);
+}
+```
+
+## 함수 포인터를 리턴하는 함수의 예
+
+```cpp
+int (*Function(int nNum))(void) 
+{ 
+    return AddPorc; 
+}
+
+
+int main()
+{
+    int (*pFunction)(void);
+    pFunction = Function(N);
+}
+```

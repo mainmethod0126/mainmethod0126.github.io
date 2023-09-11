@@ -42,7 +42,13 @@ const config: DocsThemeConfig = {
       if (title === 'linux') {
         return <>📒 {title}</>
       }
+      if (title === 'command') {
+        return <>📒 {title}</>
+      }
       if (title === 'java') {
+        return <>📒 {title}</>
+      }
+      if (title === 'spring') {
         return <>📒 {title}</>
       }
       if (title === 'rdb') {

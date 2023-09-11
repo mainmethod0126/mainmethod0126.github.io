@@ -1,0 +1,24 @@
+# 리눅스에서 카프카 기본 경로 /tmp 를 그대로 쓰는건 위험하다
+
+kafka 사용중에 알 수 없는 타이밍에 kafka가 자동 종료되며 error shutdown broker because all log dirs in /tmp/kafka-logs have failed (kafka.log.logmanager) log를 뿜는 경우가 확인되었습니다.
+
+## 예상되는 원인
+
+kafka와 zookeeper의 기본 .properties 파일에는 /tmp 폴더 하위에 데이터를 쌓도록 지정되어있습니다.
+
+문제는 리눅스의 /tmp 경로는 기본적으로 운영체제가 주기적으로 내용을 비워주는 크론탭을 돌리고있습니다.  
+아마 OS가 비워주는 타이밍에 Kafka에서 파일 핸들러를 물고있는게 아니라서 OS는 해당 파일을 지워버리고 지워진 후 바로 Kafka가 해당 파일을 사용하려하니 파일이 삭제되어(또는 손상?) 에러를 뿜는 것 같습니다.
+
+## 예상되는 해결책
+
+OS가 관리하는 /tmp 경로가 아닌 별도의 경로를 지정해줍니다.  
+kafka 같은 경우 kafka 설치 경로의 confing/server.properties 에서 log.dirs 의 내용을 임의의 경로로 바꾸고  
+zookeeper 같은 경웅 kafka 설치 경로의 config/zookeeper.properties 에서 dataDir 의 내용을 임의의 경로로 바꿉니다.
+
+필자의 경우 /var/kafka-logs 와 /var/zookeeper 를 생성하여 해당 경로를 지정해주었습니다.  
+만약 kafka와 zookeeper 의 실행자가 쓰기 권한이 존재하는 경로라면 폴더를 미리 만들지 않아도 자동 생성을 합니다.
+
+## 끝으로
+
+글에 작성된 원인과 해결책은 어디까지 예상되는 내용이며 확실하지는 않습니다..  
+해당 내용이 원인과 해결책이 아니라면 답변 달아주시면 감사하겠습니다ㅠㅠ

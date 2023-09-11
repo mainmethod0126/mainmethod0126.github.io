@@ -1,6 +1,9 @@
 {
     "Deep-paging-in-Elasticsearch": "Elasticsearch에서 deep paging",
     "Do-not-break-down-Elasticsearch-bulk-inserts-too-small": "elasticsearch  bulk insert를 너무 작게 쪼개면 안된다",
-    "Basic-Concepts-of-Elasticsearch": "Elasticsearch의 기본개념"
+    "Basic-Concepts-of-Elasticsearch": "Elasticsearch의 기본개념",
+    "Automated-snapshot-creation-and-restoration-using-Snapshot-Lifecycle-Management-(SLM)-in-Elasticsearch": "elasticsearch 에서 slm 을 이용한 snapshot 자동 생성 및 복구 방법",
+    "When-elasticsearch-index-becomes-read-only": "elasticsearch index가 읽기전용이 되었을 때",
+    "Elasticsearch-too-many-buckets-exception-issue": "Elasticsearch too many buckets exception 문제"
 }
   
