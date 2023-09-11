@@ -48,6 +48,9 @@ const config: DocsThemeConfig = {
       if (title === 'java') {
         return <>📒 {title}</>
       }
+      if (title === 'spring') {
+        return <>📒 {title}</>
+      }
       if (title === 'rdb') {
         return <>📒 {title}</>
       }
