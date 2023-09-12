@@ -67,6 +67,12 @@ jobs:
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
       - name: Static HTML export with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next export
+        # 검색 포털에 노출을 위한 소유권 등록 작업 (구글,네이버,다음 등)
+      - name: Ownership registration
+        run: |
+          echo "current dir : $(pwd)"
+          echo "github-workspace : ${{ github.workspace }}"
+          cp "${{ github.workspace }}/googled66ecdd939d64aef.html" ./out
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
