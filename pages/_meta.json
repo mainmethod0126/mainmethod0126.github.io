@@ -21,6 +21,7 @@
   "vue": "vue",
   "docker": "docker",
   "spring": "spring",
+  "jpa": "jpa",
   "serialized-data-structure": "serialized data structure",
   "tistory": {
     "title": "Tistory Blog ↗",
