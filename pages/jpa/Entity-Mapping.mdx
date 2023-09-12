@@ -88,8 +88,8 @@ public class Member {
 - 스테이징과 운영 서버는 validate 또는 none
 
 <Callout type="info" emoji="ℹ">
-  서비스가 사용하는 DB계정은 **ALTER, DROP** 자체를 못하도록
-  권한 설정을 해 놓아야한다
+  서비스가 사용하는 DB계정은 **ALTER, DROP** 자체를 못하도록 권한 설정을 해
+  놓아야한다
 </Callout>
 
 <Callout type="info" emoji="ℹ">
@@ -190,31 +190,39 @@ public class Member {
 | precision,scale(DDL)  | BigDecimal 타입에서 사용한다(BigInteger도 사용할 수 있다). precision은 소수점을 포함한 전체 자 릿수를, scale은 소수의 자릿수다. 참고로 double, float 타입에는 적용되지 않는다. 아주 큰 숫자나 정밀한 소수를 다루어야 할 때만 사용한다 | precision=19,scale=2                |
 
 #### name
+
 ```java
 @Column(name = "name")
 private String username;
 ```
+
 테이블 필드명이 username이 아닌 **name** 으로 맵핑됨
 
 #### insertable, updatable
+
 ```java
 @Column(insertable = false, updatable = false)
 private String username;
 ```
+
 username 필드에 대해서는 이제 insert와 update가 불가능하게 막힘
 
 #### nullable(DDL)
+
 ```java
 @Column(nullable = true)
 private String username;
 ```
+
 username 필드는 null값 비허용됨
 
 #### unique(DDL)
+
 ```java
 @Column(unique = true)
 private String username;
 ```
+
 username 필드는 이제 한 테이블내의 고유값만 들어갈 수 있음 중복값 불가
 
 <Callout type="info" emoji="ℹ">
@@ -226,9 +234,9 @@ username 필드는 이제 한 테이블내의 고유값만 들어갈 수 있음 
   
   이렇게되면 제약조건 위배시 **`UK_AAWJE912ANSDASD1QWEASD 제약조건을 위배했습니다.`** 라는 식의 로그가 나올텐대
 
-  이름만 보고 무슨 목적의 제약조건인지 파악이 안된다.
+이름만 보고 무슨 목적의 제약조건인지 파악이 안된다.
 
-  그렇기 때문에 실질적으로 더 자주 쓰이는 방식은 아래의 방식이다
+그렇기 때문에 실질적으로 더 자주 쓰이는 방식은 아래의 방식이다
 
     ```java
     @Entity
@@ -238,23 +246,66 @@ username 필드는 이제 한 테이블내의 고유값만 들어갈 수 있음 
     ```
 
     이렇게 하면 제약조건의 이름도 지정할 수 있다
+
 </Callout>
 
-####  columnDefinition(DDL)
+#### columnDefinition(DDL)
+
 ```java
 @Column(columnDefinition = "varchar(100) default 'EMPTY'")
 private String username;
 ```
+
 테이블의 username 필드가 varchar(100) 으로 지정되고 default 값이 Empty로 지정된다
 
 #### length(DDL)
+
 ```java
 @Column(length = 10)
 private String username;
 ```
+
 테이블의 username 필드가 varchar(10) 으로 지정된다
 
 ### @Enumerated
 
+자바 enum 타입을 매핑할 때 사용
+
+<Callout type="error" emoji="❗❗❗">
+  주의! ORDINAL 사용 금지XXX!! 왜? Enum 타입을 추가될 때 Number는 언제든지 바뀔
+  수 있다. 예를 들어 A = 1, B = 2 인 상태에서 A = 1, C = 2, B = 3 이 될 수 있다
+</Callout>
+
+| 속성  | 설명                                                                                                        | 기본값 |
+| ----- | ----------------------------------------------------------------------------------------------------------- | ------ |
+| value | `EnumType.ORDINAL:` enum `순서`를 데이터베이스에 저장, `EnumType.STRING:` enum `이름`을 데이터베이스에 저장 |        |
+
+### @Temporal
+
+날짜 타입(java.util.Date, java.util.Calendar)을 매핑할 때만 사용
+
+java8 에서 나온 LocalDate, LocalDateTime을 사용할 때는 생략 가능(최신 하이버네이트 지원)
+
+| 속성 | 설명 | 기본값 |
+| ----- | ----------------------------------------------------------------------------------------------------------- | ------ |
+| value | `TemporalType.DATE:` 날짜, 데이터베이스 date 타입과 매핑(예: 2013–10–11), `TemporalType.TIME:` 시간, 데이터베이스 time 타입과 매핑(예: 11:11:11), `TemporalType.TIMESTAMP:` 날짜와 시간, 데이터베이스 timestamp 타입과 매핑(예: 2013–10–11 11:11:11) | |
+
+<Callout type="info" emoji="ℹ">
+    그냥 무조건 java에서 날짜 타입은 LocalDate, LocalDateTime 써라!
+</Callout>
+
+### @Lob
+
+데이터베이스 BLOB, CLOB 타입과 매핑
+
+- @Lob에는 지정할 수 있는 속성이 없다.
+- 매핑하는 필드 타입이 문자면 CLOB 매핑, 나머지는 BLOB 매핑
+    - CLOB: String, char[], java.sql.CLOB
+    - BLOB: byte[], java.sql. BLOB
 
 
+### @Transient
+
+- 필드 매핑X
+- 데이터베이스에 저장X, 조회X
+- 주로 메모리상에서만 임시로 어떤 값을 보관하고 싶을 때 사용
