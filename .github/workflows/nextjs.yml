@@ -72,7 +72,8 @@ jobs:
         run: |
           echo "current dir : $(pwd)"
           echo "github-workspace : ${{ github.workspace }}"
-          cp "${{ github.workspace }}/googled66ecdd939d64aef.html" ./out
+          cp "${{ github.workspace }}/google35a5466dfdfa011e.html" ./out
+          cp "${{ github.workspace }}/navercb18aeb0875d47a7173de160b4087f5e.html" ./out
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
