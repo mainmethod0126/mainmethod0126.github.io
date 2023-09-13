@@ -139,7 +139,7 @@ public class Member {
 | 어노테이션  | 설명                                        | 비고                                                                                                                                           |
 | ----------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | @Column     | 컬럼 매핑                                   |                                                                                                                                                |
-| @Temporal   | 날짜 타입 매핑                              | 기본적으로 DB는 DATA, TIME, TIMESTAMP 세가지로 분리하기 때문에 JAVA에서의 DATA 타입과 맞는 형식을 지정해줘야 한다. JAVA의 DATA타입은 TIMESTAMP |
+| @Temporal   | 날짜 타입 매핑                              | 기본적으로 DB는 DATE, TIME, TIMESTAMP 세가지로 분리하기 때문에 JAVA에서의 DATE 타입과 맞는 형식을 지정해줘야 한다. JAVA의 DATE타입은 TIMESTAMP |
 | @Enumerated | enum 타입 매핑                              |                                                                                                                                                |
 | @Lob        | BLOB, CLOB 매핑                             |                                                                                                                                                |
 | @Transient  | 특정 필드를 컬럼에 매핑하지 않음(매핑 무시) |                                                                                                                                                |
@@ -160,10 +160,10 @@ public class Member {
     private RoleType roleType;
 
     @Temporal(TemporalType.TIMESTAMP)
-    private Data createdDate;
+    private Date createdDate;
 
     @Temporal(TemporalType.TIMESTAMP)
-    private Data lastModifiedDate;
+    private Date lastModifiedDate;
 
     @Lob
     private String description;
