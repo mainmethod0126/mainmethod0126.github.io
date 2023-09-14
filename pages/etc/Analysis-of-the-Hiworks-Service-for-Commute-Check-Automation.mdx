@@ -1,0 +1,39 @@
+# 출근 체크 자동화를 위한 하이웍스 서비스 분석
+
+## 로그인 API 분석
+
+확인해보니 rest api 규격이고 로그인 request는 아래와 같다
+
+- method : post
+- header : `Content-Type: "application/json"`
+
+```json
+{
+  "id": "아이디",
+  "password": "패스워드",
+  "ip_security_level": "1" // 이름만 봐서는 로그인용 ip를 제한 시키는 용도 같음 (회사 ip대역 또는 할당받은 고유ip에서만 로그인 가능하도록 하는 경우에 사용할 듯?)
+}
+```
+
+### response
+
+#### body
+
+```json
+{
+  "data": {
+    "office_main": ""
+  }
+}
+```
+
+![picture 0](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694694432942.png)
+
+#### cookies
+
+![picture 6](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694694774959.png)  
+
+#### headers
+
+![picture 5](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694694724821.png)  
+
