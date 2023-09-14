@@ -23,6 +23,7 @@
   "spring": "spring",
   "jpa": "jpa",
   "serialized-data-structure": "serialized data structure",
+  "etc": "etc",
   "tistory": {
     "title": "Tistory Blog ↗",
     "type": "page",
