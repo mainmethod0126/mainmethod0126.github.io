@@ -4,6 +4,9 @@
 
 확인해보니 rest api 규격이고 로그인 request는 아래와 같다
 
+### request
+
+- url : https://auth-api.office.hiworks.com/office-web/login
 - method : post
 - header : `Content-Type: "application/json"`
 
@@ -16,6 +19,9 @@
 ```
 
 ### response
+
+회사 정보와 세션을 쿠키에 담아서 response 하는 것으로 보인다.
+이 쿠키들을 api 요청할때 사용하면 될 것으로 보인다
 
 #### body
 
@@ -36,4 +42,58 @@
 #### headers
 
 ![picture 5](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694694724821.png)  
+
+
+## Submit 핸들 (onSubmit Function)
+![picture 7](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694695438630.png)  
+
+## 찾았다! 출근 체크 로직
+
+![picture 8](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694705998887.png)  
+
+## G 객체 - create()
+
+![picture 9](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694706080914.png)  
+
+그럼 this.url/ + `"web/time-record"` 라는 말인데, url 값이 뭔지 확인만 할 수 있으면 끝난 것 같다.
+
+## G 객체 - this.url
+
+![picture 10](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694706192269.png)  
+
+찾았다 내 사랑
+
+## "출근" API 호출해보기
+
+### request
+
+- url : https://hr-timecheck-api.office.hiworks.com/v4/web/time-record
+- method : post
+- header : `Content-Type: "application/json"`
+- body
+```json
+{
+    "data" : {
+        "type": "출석"
+    }
+}
+```
+
+지금까지 분석된 내용으로는 위와 같이 보내면 성공할 것 같은데 response가 아래와 같이 나왔습니다.
+```json
+{
+    "errors": {
+        "status": 400,
+        "title": "Bad Request",
+        "message": "오류가 발생하였습니다. 잠시 후 다시 시도하세요."
+    }
+}
+```
+
+![picture 11](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694707147177.png)  
+
+![picture 12](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694707341184.png)  
+
+예상으로는 이미 "출근" 을 한번 한 상태라 오류가 발생한 것 같은데 "미출근" 상황에서 다시 시도해볼 예정입니다.
+
 
