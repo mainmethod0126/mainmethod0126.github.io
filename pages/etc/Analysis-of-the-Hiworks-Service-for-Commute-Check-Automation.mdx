@@ -1,4 +1,4 @@
-# 출근 체크 자동화를 위한 하이웍스 서비스 분석
+# 출근 체크 자동화를 위한 하이웍스 로그인 및 출근 분석
 
 ## 로그인 API 분석
 
@@ -9,7 +9,7 @@
 - url : https://auth-api.office.hiworks.com/office-web/login
 - method : post
 - header : `Content-Type: "application/json"`
-
+- body
 ```json
 {
   "id": "아이디",
@@ -74,7 +74,7 @@
 ```json
 {
     "data" : {
-        "type": "출석"
+        "type": "출근"
     }
 }
 ```
@@ -89,8 +89,6 @@
     }
 }
 ```
-
-![picture 11](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694707147177.png)  
 
 ![picture 12](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694707341184.png)  
 
