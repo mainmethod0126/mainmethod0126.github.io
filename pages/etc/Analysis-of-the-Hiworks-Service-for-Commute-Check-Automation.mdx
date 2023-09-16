@@ -74,24 +74,26 @@
 ```json
 {
     "data" : {
-        "type": "출근"
+        "type": "1"
     }
 }
 ```
 
-지금까지 분석된 내용으로는 위와 같이 보내면 성공할 것 같은데 response가 아래와 같이 나왔습니다.
+### response
+
+성공하면 response body 는 `빈값`이오고
+http status code 는 `201` 이 찍힙니다
+
+만약 한번 출근 후 출근을 재시도하면 아래와 같은 오류가 발생합니다.
+
 ```json
 {
     "errors": {
         "status": 400,
         "title": "Bad Request",
-        "message": "오류가 발생하였습니다. 잠시 후 다시 시도하세요."
+        "message": "해당 근무체크를 할 수 없습니다."
     }
 }
 ```
-
-![picture 12](./images/Analysis-of-the-Hiworks-Service-for-Commute-Check-Automation-1694707341184.png)  
-
-예상으로는 이미 "출근" 을 한번 한 상태라 오류가 발생한 것 같은데 "미출근" 상황에서 다시 시도해볼 예정입니다.
 
 
