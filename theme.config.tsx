@@ -30,6 +30,15 @@ const config: DocsThemeConfig = {
       if (title === 'search condition metadata') {
         return <>🗃 {title}</>
       }
+      if (title === 'hiworks auto attendance') {
+        return <>🗃 {title}</>
+      }
+      if (title === 'simple semantic version') {
+        return <>🗃 {title}</>
+      }
+      if (title === 'annotation scanner') {
+        return <>🗃 {title}</>
+      }
       if (title === 'elasticsearch') {
         return <>📒 {title}</>
       }
