@@ -24,6 +24,9 @@ const config: DocsThemeConfig = {
       if (title === 'Introduction') {
         return <>👋 {title}</>
       }
+      if (title === 'My Profile') {
+        return <>🧑🏻‍💻 {title}</>
+      }
       if (title === 'projects') {
         return <>🗄 {title}</>
       }
