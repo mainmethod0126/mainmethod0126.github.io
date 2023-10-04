@@ -39,6 +39,9 @@ const config: DocsThemeConfig = {
       if (title === 'simple semantic version') {
         return <>🗃 {title}</>
       }
+      if (title === 'sneaky chat games') {
+        return <>🗃 {title}</>
+      }
       if (title === 'annotation scanner') {
         return <>🗃 {title}</>
       }
