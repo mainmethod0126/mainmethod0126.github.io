@@ -66,6 +66,9 @@ const config: DocsThemeConfig = {
       if (title === 'spring') {
         return <>📒 {title}</>
       }
+      if (title === 'webflux') {
+        return <>📒 {title}</>
+      }
       if (title === 'jpa') {
         return <>📒 {title}</>
       }
