@@ -311,6 +311,13 @@ list에서 item을 체크한 후 **Close** 를 클릭하면 검증(
 
 이후 closed된 item을 선택하고 `Release` 를 클릭하면 일정 시간 뒤 maven central 로 배포가 진행됩니다.
 
+<Callout type="warning" emoji="⚠">
+만약 Release 진행시 **Auto Drop(default : checked)** 을 체크하시고 업로드 하실 경우 업로드 후 자동으로 **Staging Repository** 에 등록 되어있던 item은 사라지게 됩니다.
+
+어디로 사라졌지?? 라고 당황하실 수 있는데 정상적으로 업로드 되었을 것이니 maven url로 접속을 시도해보시기 바랍니다.
+</Callout>
+
+
 [예시로 사용 된 프로젝트 maven url](https://repo1.maven.org/maven2/io/github/mainmethod0126/annotation-scanner/)
 
 ![picture 14](./images/deploying-a-java-open-source-library-project-to-maven-central-1696851343265.png)  
