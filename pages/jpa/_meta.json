@@ -2,5 +2,6 @@
   "Persistence-Management-Internal-Operation-Method": "영속성 관리 내부 동작 방식",
   "Getting-Started-with-JPA": "JPA 시작하기",
   "Entity-Mapping": "엔티티 매핑",
-  "retrieving-hierarchical-data-with-jpa": "jpa 사용시 계층형 데이터 조회하기"
+  "retrieving-hierarchical-data-with-jpa": "jpa 사용시 계층형 데이터 조회하기",
+  "Basic-Relationship-Mapping": "연관관계 매핑 기초"
 }
