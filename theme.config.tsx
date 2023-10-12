@@ -12,7 +12,7 @@ const config: DocsThemeConfig = {
   },
   docsRepositoryBase: 'https://github.com/mainmethod0126/mainmethod0126.github.io',
   footer: {
-    text: 'Nextra Docs Template',
+    text: 'mainmethod0126@gmail.com',
   },
   sidebar: {
     defaultMenuCollapseLevel: 1,
