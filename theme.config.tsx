@@ -69,6 +69,9 @@ const config: DocsThemeConfig = {
       if (title === 'webflux') {
         return <>📒 {title}</>
       }
+      if (title === 'r2dbc') {
+        return <>📒 {title}</>
+      }
       if (title === 'jpa') {
         return <>📒 {title}</>
       }
