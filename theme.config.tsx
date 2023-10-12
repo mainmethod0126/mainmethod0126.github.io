@@ -1,6 +1,7 @@
 import React from 'react'
 import { DocsThemeConfig } from 'nextra-theme-docs'
 
+
 const config: DocsThemeConfig = {
   logo: <span>😸신우섭의 도서관 v2</span>,
   project: {
@@ -105,6 +106,11 @@ const config: DocsThemeConfig = {
       return <>📃 {title}</>
     }
   },
+  useNextSeoProps() {
+    return {
+      titleTemplate: '%s - 신우섭의 도서관 v2'
+    }
+  }
 }
 
 export default config
