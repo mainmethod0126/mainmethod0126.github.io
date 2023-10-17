@@ -505,10 +505,48 @@ class Team {
     단방향 매핑을 잘 하고 **양방향은 필요할 때 추가**해도 됨(테이블에 영향을 주지 않음)
 
     단방향 매핑
-    ![picture 9](./images/Basic-Relationship-Mapping-1697542233488.png)  
+    ![picture 9](./images/Basic-Relationship-Mapping-1697542233488.png)
 
     양방향 매핑
-    ![picture 10](./images/Basic-Relationship-Mapping-1697542256186.png)  
+    ![picture 10](./images/Basic-Relationship-Mapping-1697542256186.png)
 
     단방향에서 양방향으로 변했을 때 **테이블 연관관계** 는 **전혀 변함이 없다** 그러니 **양방향은 필요할 때 추가해도 됨!**
+
+    객체 입장에서 **양방향 연관관계는 이점이 없다**
+
 </Callout>
+
+#### 연관관계의 주인을 정하는 기준
+
+- 비즈니스 로직을 기준으로 연관관계의 주인을 선택하면 안됨
+
+- **연관관계의 주인은 외래 키의 위치를 기준으로 정해야함**
+
+<Callout type="info" emoji="🧑🏻‍💻">
+  **그냥 닥 "FK" 가지고 있는 쪽이 주인!!**
+</Callout>
+
+---
+
+## 실전 예제 - 연관관계 매핑 시작
+
+### 테이블 구조
+
+![picture 1](./images/Basic-Relationship-Mapping-1697552919105.png)
+
+### 객체 구조
+
+![picture 2](./images/Basic-Relationship-Mapping-1697552929219.png)
+
+- 실무에서 `Member` 객체가 `Order` 객체를 알아야하는 `양방향 연관관계` 매핑은 잘못된 설계다
+
+  <Callout type="info" emoji="🧑🏻‍💻">
+  **복잡한 연관관계를 잘 끊을 줄 알아야 한다**
+
+  `Member` 입장에서 **이 Member가 어떤 주문을 했지?** 를 검색하기 위하여
+  `Member` 객체가 `List<Order> orders` 를 갖게하면 복잡도가 끝이 없다.
+
+  `Order` 객체가 알고있는 `Member FK`가지고 **이 Member가 어떤 주문을 했지?** 를 검색해야한다.
+  즉, `SELECT * FROM Order o join Member m on o.memberId = m.id where o.memberId = wusub.shin` 와 같이 `Order`로 부터 **이 Member가 어떤 주문을 했지?** 의 결과값을 도출해 낼 수 있고, 실제로 그렇게 해야한다.
+
+  </Callout>
