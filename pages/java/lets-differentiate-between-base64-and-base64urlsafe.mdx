@@ -1,0 +1,113 @@
+# base64와 base64UrlSafe를 구분해서 사용하자
+
+**base64** 로 인코딩 된 내용을 **base64UrlSafe** 로 디코딩하거나,
+
+**base64UrlSafe** 로 인코딩 된 내용을 **base64** 로 디코딩하면 익셉션이 발생합니다.
+
+```java filename="base64 to base64UrlSafe Exception case"
+@SuppressWarnings("java:S5778")
+@Test
+void testBase64ToBase64UrlSafe_whenPlusAndSlashInEncoded_thenThrowException() {
+
+    String sourceText = "저의+이름은/신우섭입니다";
+
+    byte[] encoded = Base64.getEncoder().encode(sourceText.getBytes());
+
+    assertThatThrownBy(() -> {
+        Base64.getUrlDecoder().decode(encoded);
+    }).isInstanceOf(IllegalArgumentException.class);
+}
+```
+
+```java filename="base64UrlSafe to base64 Exception case"
+@Test
+void testBase64UrlSafeToBase64_whenHyphenInEncoded_thenSusscess() {
+
+    String sourceText = "저의+이름은/신우섭입니다";
+
+    byte[] encoded = Base64.getUrlEncoder().encode(sourceText.getBytes());
+
+    assertThatThrownBy(() -> {
+        Base64.getDecoder().decode(encoded);
+    }).isInstanceOf(IllegalArgumentException.class);
+}
+```
+
+발생하는 익셉션 메세지는
+
+```text
+java.lang.IllegalArgumentException: Illegal base64 character 2b
+```
+
+와 같은 에러가 발생하며,
+
+여기서 `2b`란 `+` 문자를 의미합니다
+
+| 문자 | ASCII 코드 | 16진수 표현 |
+| ---- | ---------- | ----------- |
+| +    | 43         | 2B          |
+| /    | 47         | 2F          |
+| -    | 45         | 2D          |
+| \_   | 95         | 5F          |
+
+## 익셉션 이유
+
+**Base64** 인코딩 문자 집합에는 **"`+`, `/`"** 두 문자가 포함되어 있습니다
+
+**base64 문자 집합 표**
+![picture 0](./images/lets-differentiate-between-base64-and-base64urlsafe-1698719053176.png)
+
+그렇기 때문에 일반적으로 **base64** 인코딩된 문자열에는 **"`+`, `/`"** 두 문자가 포함될 가능성이 있습니다.
+
+```java
+String sourceText = "저의+이름은/신우섭입니다";
+
+// encodedText : 7KCA7J2YK+ydtOumhOydgC/si6DsmrDshK3snoXri4jri6Q=
+String encodedText = new String(Base64.getEncoder().encode(sourceText.getBytes()));
+```
+
+```text
+encodedText : 7KCA7J2YK+ydtOumhOydgC/si6DsmrDshK3snoXri4jri6Q=
+```
+
+하지만 **HTTP URL** 의 경우 **"`+`, `/`"** 를 허용하지 않기 때문에
+
+**base64UrlSafe** 인코딩의 경우에는 **"`-`, `_`"** 를 사용합니다
+
+```java
+String sourceText = "저의+이름은/신우섭입니다";
+
+// encodedText : 7KCA7J2YK-ydtOumhOydgC_si6DsmrDshK3snoXri4jri6Q=
+String encodedText = new String(Base64.getUrlEncoder().encode(sourceText.getBytes()));
+```
+
+```text
+encodedText : 7KCA7J2YK-ydtOumhOydgC_si6DsmrDshK3snoXri4jri6Q=
+```
+
+그렇기 때문에
+
+- **base64 encoding -> base64UrlSafe decoding** : **base64UrlSafe** 가 **"`+`, `/`"** 기호 자체를 모르는 상황이라 디코딩 과정에서 익셉션 발생
+- **base64UrlSafe encoding -> base64 decoding** : **base64** 가 **"`-`, `_`"** 기호 자체를 모르는 상황이라 디코딩 과정에서 익셉션 발생
+
+과 같은 이유로 익셉션이 발생합니다
+
+그렇다면 `"그냥 url 에 보낼때는 base64UrlSafe 로 보내고 나머지는 base64로 하면 문제 없는거 아닌가요??"` 라는 의문이 들 수 있는데
+
+다음과 같은 상황을 조심해야합니다
+
+## JWT 라이브러리
+
+**JWT**의 경우 `HEADER`, `PAYLOAD`, `SIGNATURE` 각 부분이 **Base64** 로 인코딩 되어있습니다.
+
+```text filename="JWT sample"
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+```
+
+그런데 이때 사용되는 `base64 인코딩` 은 `base64UrlSafe` 일까요? 아니면 일반적인 `base64` 인코딩 일까요
+
+이 부분은 라이브러리 제작자마다 다르게 했을 수 있습니다.
+
+만약 라이브러리 제작자가 `base64 인코딩` 을 사용했을 경우 JWT를 파싱하는 쪽에서 `base64UrlSafe` 를 사용하면 파싱에 실패하고 그 반대의 경우도 마찬가지입니다.
+
+그렇기 때문에 인코딩, 디코딩 상호간에 base64를 UrlSafe로 사용하는지를 확인해야합니다.
