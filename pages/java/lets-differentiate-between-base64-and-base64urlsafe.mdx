@@ -111,3 +111,11 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4
 만약 라이브러리 제작자가 `base64 인코딩` 을 사용했을 경우 JWT를 파싱하는 쪽에서 `base64UrlSafe` 를 사용하면 파싱에 실패하고 그 반대의 경우도 마찬가지입니다.
 
 그렇기 때문에 인코딩, 디코딩 상호간에 base64를 UrlSafe로 사용하는지를 확인해야합니다.
+
+## 결론
+
+그냥 **base64** 와 **base64UrlSafe** 는 다른 인코딩 방식이라고 생각하자
+
+그러면 당연히 **base64** 로 인코딩 되었으면 **base64** 로 디코딩
+
+**base64UrlSafe** 로 인코딩 되었으면 **base64UrlSafe** 로 디코딩
