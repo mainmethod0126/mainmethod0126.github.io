@@ -1,0 +1,21 @@
+# 도커 빌드 캐시가 계속 증가하는 이유 (with. no space left on device error)
+
+어느날 갑자기 CI 과정에서 발생한 에러
+
+![picture 1](./images/docker-build-cache-keeps-increasing-1708927258876.png)
+
+Docker Image 를 생성중인 Build server 에 공간이 부족
+
+확인해보니 `Dokcer build cache` 가 저장공간의 대부분을 차지여 남은 저장공간이 없는 상황
+
+자 그럼 문제 발생도 했으니 `build cache` 가 뭔지, 왜 용량이 많이 쌓였는지, 어떻게 재발 방지를 할 수 있는지 확인해보겠습니다.
+
+```bash
+docker system df
+```
+
+![picture 0](./images/docker-build-cache-keeps-increasing-1708927057259.png)
+
+```bash
+docker builder prune -a
+```
