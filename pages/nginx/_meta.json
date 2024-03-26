@@ -1,3 +1,4 @@
 {
-  "Setting-up-WebSocket-Proxy-in-nginx": "nginx 에서 WebSocket Proxy 설정하기"
+  "Setting-up-WebSocket-Proxy-in-nginx": "nginx 에서 WebSocket Proxy 설정하기",
+  "using-nginx-to-provide-multiple-spa-pages-based-on-url-path": "Nginx 를 이용하여 URL Path 기반으로 여러개의 SPA 페이지를 제공하는 방법"
 }
