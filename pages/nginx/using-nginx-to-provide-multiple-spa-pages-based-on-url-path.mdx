@@ -1,0 +1,300 @@
+# Nginx 를 이용하여 URL Path 기반으로 여러개의 SPA 페이지를 제공하는 방법
+
+하나의 서버에 두개의 각기 다른 서비스의 정적 페이지가 존재한다고 했을 때, Path 기반으로 두 정적 페이지를 구분하여 제공하는 방법을 알아보겠습니다.
+
+## 환경
+
+- Nginx 1.18
+
+## 정적 페이지가 하나일 때
+
+`Path 기반으로 두개의 정적 페이지 제공하기` 를 알아보기 전에 **정적 페이지가 하나** 일 경우를 먼저 확인해보겠습니다.
+
+```text filename="default.conf"
+server {
+    listen 9000 ssl;
+    listen [::]:9000 ssl;
+
+    server_name www.my.com;
+    ssl_certificate "server.pem";
+    ssl_certificate_key "server.key";
+
+    charset utf-8;
+
+    root /home/woosub/myservice/;
+    index index.html;
+
+    location / {
+            try_files $uri /index.html;
+    }
+}
+```
+
+이럴 경우 Client 가 Web 브라우저에서 `https://<서버 주소>:9000` URL 로 접속을 시도하면 `/home/woosub/myservice/index.html` 을 제공받게됩니다.
+
+자 그럼 이제 본격적으로 정적 페이지 두개인 상황을 보겠습니다.
+
+## Path 기반으로 두개의 정적 페이지 제공하기
+
+저희는 `URL Path` 기반으로 페이지를 분리해야하니 조건을 확인해보겠습니다.
+
+| Client 의 접속 URL 예시      | 제공받아야 하는 파일    |
+| ---------------------------- | ----------------------- |
+| `https://<서버 주소>:9000`   | `A` 서비스의 index.html |
+| `https://<서버 주소>:9000/B` | `B` 서비스의 index.html |
+
+실제 서버상에서 각 `index.html`들은 아래와 같은 경로에 위치되었다고 가정합니다.
+
+| `A` 서비스의 index.html 경로        | `B` 서비스의 index.html 경로              |
+| ----------------------------------- | ----------------------------------------- |
+| `/home/woosub/myservice/index.html` | `/home/woosub/myservice/b/web/index.html` |
+
+위 조건을 반영하여 nginx 설정 파일을 아래와 같이 변경합니다.
+
+```text filename="default.conf"
+server {
+    listen 9000 ssl;
+    listen [::]:9000 ssl;
+
+    server_name www.my.com;
+    ssl_certificate "server.pem";
+    ssl_certificate_key "server.key";
+
+    charset utf-8;
+
+    root /home/woosub/myservice/;
+    index index.html;
+
+    location / {
+            try_files $uri /index.html;
+    }
+
+    // `indexB.html` 을 위하여 추가된 부분!
+    location /B {
+        alias /home/woosub/myservice/b/web/;
+    }
+}
+```
+
+## alias 키워드
+
+```
+location /B {
+    alias /home/woosub/myservice/b/web/;
+    ~~~
+}
+```
+
+`alias` 는 요청된 URL에서 `location /B` 와 같이 적중된 `Path` 를 변경하는 키워드입니다.
+주의할 점은 Path 전체가 바뀌는 것이 아니라 **적중된 부분만 변경**되는 점 입니다.
+그 외의 부분은 alias로 변경된 부분 뒤에 자동으로 붙게됩니다.
+
+| 요청 URL Path | Alias 가 반영된 Path                  |
+| ------------- | ------------------------------------- |
+| `/B`          | `/home/woosub/myservice/b/web/`       |
+| `/B/custom`   | `/home/woosub/myservice/b/web/custom` |
+| `/B/c/d/e`    | `/home/woosub/myservice/b/web/c/d/e`  |
+
+위 예시와 같이 `location /B` 와 일치하는 `/B` 가 alias 에 명시된 `/home/woosub/myservice/b/web/` 로 변경됩니다.
+
+이때 최상단에 `index index.html;` 가 이미 명시되어있으니
+
+client 요청 URL에 따라 제공받는 index.html이 다르게됩니다.
+
+| Client 의 접속 URL 예시      | 제공받는 index.html                       |
+| ---------------------------- | ----------------------------------------- |
+| `https://<서버 주소>:9000`   | `/home/woosub/myservice/index.html`       |
+| `https://<서버 주소>:9000/B` | `/home/woosub/myservice/b/web/index.html` |
+
+## 어림없지! 동작 안함
+
+위와 같이 설정하면 바로 동작할 것 같지만 현실은 녹록치 않습니다.
+
+```html filename="index.html"
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>myservice</title>
+    <script type="module" crossorigin src="/assets/index-vwe0aiAc.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="/config.jsx"></script>
+  </body>
+</html>
+```
+
+위와 같은 html파일이 브라우저에서 로드될 때 외부 리소스를 참조하는 키워드들이 존재할 경우
+브라우저는 서버에게 필요한 리소스를 요청하게됩니다. (`href="/vite.svg"`, `src="/assets/index-vwe0aiAc.js"`, `src="/config.jsx"` 등)
+
+`href="/vite.svg"` 를 예시로 브라우저는 `https://<서버 주소>:9000/vite.svg` 와 같은 URL을 통하여 서버측에 리소스를 요청하게되는데
+
+이 URL에는 `/B` 가 `미포함` 되어있습니다.
+
+이 요청을 받은 서버의 `Nginx`는 `/B` 가 미포함되어있으니
+
+```text filename="default.conf"
+location / {
+        try_files $uri /index.html;
+}
+```
+
+를 실행시키게 될 것이고, 결과적으로 `/home/woosub/myservice/vite.svg` 경로에서 리소스를 찾기 때문에 파일 찾기에 실패합니다.
+
+`404 Not Found` 가 바로 발생하면 오히려 땡큐지만 `try_files $uri /index.html;` 코드로 인하여 파일을 못찾았을 시 `/index.html` 를 기본적으로 반환하기 때문에
+
+브라우저가 요청한 `vite.svg` 가 아닌 `A 서비스의 index.html` 이 반환되고 상태코드가 `200 OK` 인 흑마법이 발생합니다.
+
+겉만 봐서는 요청에 대한 상태코드가 다 `200 OK` 인데 **페이지가 정상적으로 안보여서 사용자는 머리에 피가 쏠리기 시작합니다.**
+
+## sub_filter 키워드
+
+이때 사용할 수 있는 키워드가 `sub_filter` 입니다.
+
+`sub_filter` 는 Nginx에서 응답 내용 중 특정 문자열을 다른 문자열로 대체할 때 사용됩니다.
+
+index.html 에서 외부 리소스를 참조하는 부분은
+
+- `href="/vite.svg"`
+- `src="/assets/index-vwe0aiAc.js"`
+- `src="/config.jsx"`
+
+위와 같이 세가지 항목이기에 아래와 같이 Nginx 설정을 변경합니다.
+
+```text filename="default.conf"
+location /B {
+    alias /home/woosub/myservice/b/web/;
+    sub_filter assets/ B/assets/;
+    sub_filter config.jsx B/config.jsx;
+    sub_filter vite.svg B/vite.svg;
+}
+```
+
+위 설정을 적용하고 다시 index.html을 요청해보면
+
+```html filename="index.html"
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/B/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gx-log-linker-web-console</title>
+    <script
+      type="module"
+      crossorigin
+      src="/B/assets/index-vwe0aiAc.js"
+    ></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="/B/config.jsx"></script>
+  </body>
+</html>
+```
+
+위와 같이 `/B` 가 추가된 index.html 을 제공받게 됩니다.
+
+### sub_filter_once
+
+그러면 `sub_filter` 만 사용하면 문제 없을까요?
+
+이건 상황에 따라 달라집니다.
+
+만약 index.html이 아래와 같다고 가정합니다.
+
+```html filename="index.html"
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>myservice</title>
+    <script type="module" crossorigin src="/assets/index-vwe0aiAc.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="/config.jsx"></script>
+  </body>
+</html>
+```
+
+`href="/vite.svg"` 가 세개나 존재합니다.
+
+이때 `sub_filter vite.svg B/vite.svg;` 를 사용했으니 문제 없겠지 라고 생각할 수 있지만
+
+실제로 배포되는 index.html을 보면
+
+```html filename="index.html"
+<link rel="icon" type="image/svg+xml" href="/B/vite.svg" />
+<link rel="icon" type="image/svg+xml" href="/vite.svg" />
+<link rel="icon" type="image/svg+xml" href="/vite.svg" />
+```
+
+와 같이 첫번째로 발견되는 `vite.svg` 만 `/B/vite.svg` 로 바뀌고 나머지는 그대로입니다.
+
+이 이유는 `sub_filter` 가 기본적으로 첫 번째 일치한 부분만 교체하고 그 이후는 교체하지 않도록 설정되어있기 때문입니다.
+
+일치하는 모든 부분을 교체하기 위해서는 `sub_filter_once` 를 사용해야하며 옵션은 `on`과 `off` 두개가 존재합니다.
+
+| `sub_filter_once` 옵션 | 설명                                                                      |
+| ---------------------- | ------------------------------------------------------------------------- |
+| `on`                   | 응답 내에서 일치하는 `첫 번째 항목만` 대체됩니다. 이는 기본 설정값입니다. |
+| `off`                  | 응답 내의 `모든 일치하는 항목`이 대체됩니다.                              |
+
+위 옵션을 아래와 같이 Nginx 설정에 적용해보겠습니다.
+
+```text filename="default.conf"
+location /B {
+    alias /home/woosub/myservice/b/web/;
+    sub_filter assets/ B/assets/;
+    sub_filter config.jsx B/config.jsx;
+    sub_filter vite.svg B/vite.svg;
+    sub_filter_once off;
+}
+```
+
+이후에 제공되는 index.html을 살펴보면
+
+```html filename="index.html"
+<link rel="icon" type="image/svg+xml" href="/B/vite.svg" />
+<link rel="icon" type="image/svg+xml" href="/B/vite.svg" />
+<link rel="icon" type="image/svg+xml" href="/B/vite.svg" />
+```
+
+와 같이 모든 `vite.svg` 가 `/B/vite.svg` 로 바뀐걸 확인할 수 있습니다.
+
+### sub_filter_types
+
+Client에게 전달되는 파일이 html이 아닌 다른 형식일 수도 있습니다.
+이때 해당 파일에 `/vite.svg` 와 같은 경로가 명시되어있을 가능성이 존재하므로
+해당 파일들에 들어있는 `/vite.svg` 도 `/B/vite.svg` 와 같이 변경해줘야할 가능성이 있습니다.
+
+이때 `sub_filter_types` 키워드를 사용하여 `sub_filter` 가 적용될 타입을 지정할 수 있습니다.
+
+| `sub_filter_types` 사용 예시                                  | 설명                                                                                                                |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `sub_filter_types text/html;`                                 | `sub_filter`를 `text/html` MIME 타입의 응답에만 적용합니다. 이는 `sub_filter`의 기본 동작 방식입니다.               |
+| `sub_filter_types application/javascript;`                    | `sub_filter`를 `application/javascript` MIME 타입의 응답에 적용합니다.                                              |
+| `sub_filter_types text/css;`                                  | `sub_filter`를 `text/css` MIME 타입의 응답에 적용합니다.                                                            |
+| `sub_filter_types text/html application/javascript text/css;` | `sub_filter`를 여러 MIME 타입의 응답에 적용합니다. 서로 다른 종류의 콘텐츠에 대해 문자열 대체를 수행할 수 있습니다. |
+| `sub_filter_types *;`                                         | 모든 응답 타입에 `sub_filter`를 적용합니다.                                                                         |
+
+위 옵션을 참고하여 아래와 같이 Nginx 설정에 적용해보겠습니다.
+
+```text filename="default.conf"
+location /B {
+    alias /home/woosub/myservice/b/web/;
+    sub_filter assets/ B/assets/;
+    sub_filter config.jsx B/config.jsx;
+    sub_filter vite.svg B/vite.svg;
+    sub_filter_once off;
+    sub_filter_types *;
+}
+```
