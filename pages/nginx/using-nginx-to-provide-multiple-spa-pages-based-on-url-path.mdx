@@ -366,3 +366,96 @@ server {
     }
 }
 ```
+
+## 부록) SPA 에서 라우트된 URL에는 `/B` 가 존재하지 않는다 어떻게 해야하나
+
+본문의 내용은 Nginx와 관련된 내용이지만 이 내용은 Client 개발자 입장에서의 내용입니다.
+
+`https://<서버 주소>:9000/B` URL 을 통하여 정상적으로 `index.html`과 `js`, `초기 리소스`들을 다운받아서
+사용할 때 약간의 문제가 발생합니다.
+
+`location /B` 라는 내용은 `/B 로 시작하는 Path를 가진 요청은 ~과 같이 처리하겠다` 라는 `서버 입장`에서의 처리 입니다.
+
+언제든지 서버의 마음이 바뀌면 `/B`를 `/A`로 또는 `/C`로 더 복잡하게는 `/B/A/C/123/` 로 바꿀 수 있습니다.
+
+Client 코드상에서는 이 `/B`,`/A`,`/C` 와 같은 분기에 대한 코드가 어디에도 들어있지 않죠
+
+그러면 아래와 같은 현상이 발생합니다.
+
+1. 웹 브라우저에서 `https://<서버 주소>:9000/B` 를 `직접` 입력합니다.
+2. 메인 페이지가 렌더링됩니다.
+3. `회원가입` 버튼을 클릭하여 페이지 이동(라우팅) 이 발생합니다.
+4. URL 이 `https://<서버 주소>:9000/join` 로 변경됩니다.
+
+위 예시를 보면
+
+최초 URL은 `https://<서버 주소>:9000/B` 였으나 라우트되면서 `https://<서버 주소>:9000/join` 로 URL이 바뀌었습니다.
+`/B` 라는 `Path`의 시작점이 사라졌습니다
+
+하지만 페이지는 문제없이 동작할 것입니다.
+
+라우트는 실제로 서버에다가 `https://<서버 주소>:9000/join` 에 해당하는 페이지를 요청한게 아니라, 웹 브라우저상에서 보여지는 URL이 변경되고, 그에 맞는 컴포넌트가 렌더링되는 `Client 범위의 동작`이기 때문입니다.
+
+문제는 해당 `/B가 제외된 URL`이 사용자에게 그대로 노출된다는 것입니다.
+
+사용자가 노출된 URL을 그대로 웹 브라우저 URL에 복사->붙여넣기를 하고 엔터를 치면 어떻게 될까요?
+
+이때는 Client 범위의 동작이 아닌 `서버와의 통신`이 이뤄집니다.
+
+`https://<서버 주소>:9000/join`에 해당하는 페이지를 서버에게 요청하게되죠
+
+URL에는 `/B` 키워드가 없어진 상태니 [어림없지! 동작 안함](#어림없지-동작-안함) 에서 발생했던 **문제가 그대로 발생**합니다
+
+### 라우트 URL에 basePath 를 지정하는 방법
+
+그렇다고 언제 바뀔지 모르는 `/B`를 라우트 URL에 `상수값으로 고정` 하기에는 무리가 있습니다.
+
+그래서 `/B` 라는 값을 동적으로 얻어올 수 있는 방법을 찾아야하는데
+
+최초 한번은 `1. 웹 브라우저에서 https://<서버 주소>:9000/B 를 직접 입력합니다.` 선행 작업이 필수로 이뤄져야한다는 전재조건을 활용하여
+
+최초에는 항상 Path가 `/B` 로 끝날태니, 이를 저장해놓으면 문제를 해결할 수 있습니다.
+
+아래는 그 예시입니다.
+
+```js filename="App.jsx"
+// ...
+const MANAGE_STREAM_ROUTE_URL_PATH = "management/stream";
+
+const createUrlForPath = (path) => {
+  // 현재 window.location.href에서 basePath를 동적으로 추출합니다.
+  const basePath = new URL(window.location.href).pathname;
+
+  // path가 undefined이거나 null, 또는 문자열이 아닌 경우의 처리
+  if (path == null || typeof path !== "string") {
+    console.error(
+      "Invalid path: path is either undefined, null, or not a string."
+    );
+    return basePath;
+  }
+
+  // URL이 '/'로 시작하는지 확인하고, 맞다면 첫 번째 문자를 제거합니다.
+  const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
+
+  // basePath가 이미 path를 포함하는지 확인하여 중복 추가를 방지합니다.
+  // 브라우저에서 새로고침을 누르면 URL이 입력되있는 상태에서 다시 렌더링되니
+  // basePath 에 이미 path가 포함된 상태일 수 있습니다.
+  // 그렇기 때문에 중복되지 않도록 분기처리가 필요합니다.
+  if (basePath.endsWith(normalizedPath)) {
+    return basePath;
+  } else {
+    // basePath와 normalizedPath를 조합하여 최종 URL을 생성합니다.
+    // 여기서는 basePath와 normalizedPath 사이에 중복 '/'가 없도록 조심합니다.
+    return `${
+      basePath.endsWith("/") ? basePath.slice(0, -1) : basePath
+    }/${normalizedPath}`;
+  }
+};
+
+// ...
+const App = () => {
+  // ...
+  <Route path={createUrlForPath(MANAGE_STREAM_ROUTE_URL_PATH)} />;
+  // ...
+};
+```
