@@ -17,10 +17,10 @@ Predicate(술어) `주어의 행동이나, 상태를 설명하는 말.`
 Predicate<Student> isGradeAbove = (student) -> student.getGrade() >= 80;
 
 Student studentA = Student.builder().grade(85).build();
-isGradeAbove.test(student) // true
+isGradeAbove.test(studentA) // true
 
 Student studentB = Student.builder().grade(75).build();
-isGradeAbove.test(student) // false
+isGradeAbove.test(studentB) // false
 ```
 
 ## Predicate 의 여러 기능
@@ -35,9 +35,10 @@ Predicate 에서도 `and` 함수를 통하여 이를 편리하게 지원합니�
 // Student 를 주어, (student) -> student.getGrade() >= 80 를 술어로 보면 쉽게 이해됩니다.
 // 즉 isGradeAbove는 성적이 80점 이상인 학생을 구분해주는 Predicate 입니다.
 Predicate<Student> isGradeAbove = (student) -> student.getGrade() >= 80;
+// 즉 isMan은 성별이 남자인 학생을 구분해주는 Predicate 입니다.
 Predicate<Student> isMan = (student) -> student.getGender().equals("man");
 
-// 두개의 Predicate 를 and 조건으로 합칩니다.
+// 두개의 Predicate 를 and 로 합칩니다.
 Predicate<Student> isGradeAboveAndMan = isGradeAbove.and(isMan);
 
 Student studentA = Student.builder().grade(85).gender("man").build();
@@ -50,10 +51,17 @@ Student studentC = Student.builder().grade(75).gender("man").build();
 isGradeAboveAndMan.test(studentC) // false
 ```
 
-이런 기능도 있다~ 를 보여드렸고 다른 기능들은 [도큐먼트](https://docs.oracle.com/javase/8/docs/api/java/util/function/Predicate.html) 참고해주시면 감사하겠습니다.
+이런 기능도 있다~ 를 보여드렸고 다른 기능들 `isEqual, negate, or`은 [도큐먼트](https://docs.oracle.com/javase/8/docs/api/java/util/function/Predicate.html) 참고해주시면 감사하겠습니다.
 
 
-## stream().filter()에서 쓰기 편함
+## 필터링에 쓰기 편함
+
+그래서 어디다 쓰면 좋을까요?
+
+stream().filter()와 같이 무언가를 필터링하는 조건으로 쓰기 좋습니다
+> 그래서 Spring cloud Gateway에서도 쓰는건가?.. Predicate로 Request를 필터링하려고..?
+
+
 
 결국은 함수형 문법을 편리하게 사용할 수 있도록 나온 녀석이기 때문에
 
