@@ -1,0 +1,88 @@
+# 자바의 Predicate
+
+Predicate(술어) `주어의 행동이나, 상태를 설명하는 말.`
+
+`성적이 80점 이상인 학생` 이라는 문장을 `주어` 와 `술어` 로 구분하면
+
+| 구분 | 내용    |
+|------|---------|
+| 주어 | 학생    |
+| 술어 | 성적이 80 이상인 |
+
+이를 코드에 그대로 녹여보면
+
+```java
+// Student 를 주어, (student) -> student.getGrade() >= 80 를 술어로 보면 쉽게 이해됩니다.
+// 즉 isGradeAbove는 성적이 80점 이상인 학생을 구분해주는 Predicate 입니다.
+Predicate<Student> isGradeAbove = (student) -> student.getGrade() >= 80;
+
+Student studentA = Student.builder().grade(85).build();
+isGradeAbove.test(student) // true
+
+Student studentB = Student.builder().grade(75).build();
+isGradeAbove.test(student) // false
+```
+
+## Predicate 의 여러 기능
+
+현실의 문장에서도 `성적이 80점 이상인 학생`
+이라는 문장에 `남학생` 이라는 추가 조건을 달기 쉽습니다.
+
+Predicate 에서도 `and` 함수를 통하여 이를 편리하게 지원합니다.
+
+
+```java
+// Student 를 주어, (student) -> student.getGrade() >= 80 를 술어로 보면 쉽게 이해됩니다.
+// 즉 isGradeAbove는 성적이 80점 이상인 학생을 구분해주는 Predicate 입니다.
+Predicate<Student> isGradeAbove = (student) -> student.getGrade() >= 80;
+Predicate<Student> isMan = (student) -> student.getGender().equals("man");
+
+// 두개의 Predicate 를 and 조건으로 합칩니다.
+Predicate<Student> isGradeAboveAndMan = isGradeAbove.and(isMan);
+
+Student studentA = Student.builder().grade(85).gender("man").build();
+isGradeAboveAndMan.test(studentA) // true
+
+Student studentB = Student.builder().grade(85).gender("woman").build();
+isGradeAboveAndMan.test(studentB) // false
+
+Student studentC = Student.builder().grade(75).gender("man").build();
+isGradeAboveAndMan.test(studentC) // false
+```
+
+이런 기능도 있다~ 를 보여드렸고 다른 기능들은 [도큐먼트](https://docs.oracle.com/javase/8/docs/api/java/util/function/Predicate.html) 참고해주시면 감사하겠습니다.
+
+
+## stream().filter()에서 쓰기 편함
+
+결국은 함수형 문법을 편리하게 사용할 수 있도록 나온 녀석이기 때문에
+
+이럴때 쓰기 편합니다.
+
+```java
+Predicate<Student> isGradeAbove = (student) -> student.getGrade() >= 80;
+Predicate<Student> isMan = (student) -> student.getGender().equals("man");
+
+Predicate<Student> isGradeAboveAndMan = isGradeAbove.and(isMan);
+
+List<Student> students = new ArrayList<>();
+
+students.add(Student.builder().grade(85).gender("man").build());
+students.add(Student.builder().grade(85).gender("woman").build());
+students.add(Student.builder().grade(75).gender("man").build());
+
+// grade(85).gender("man") 인 학생만 남음
+List<Student> filteredStudents = students.stream().filter(isGradeAboveAndMan).collect(Collectors.toList());
+```
+
+
+
+
+
+
+
+
+
+
+
+
