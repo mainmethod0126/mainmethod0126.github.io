@@ -88,6 +88,12 @@ const config: DocsThemeConfig = {
       if (title === 'vue') {
         return <>📒 {title}</>
       }
+      if (title === 'msa') {
+        return <>📒 {title}</>
+      }
+      if (title === 'k8s') {
+        return <>📒 {title}</>
+      }
       if (title === 'docker') {
         return <>📒 {title}</>
       }
