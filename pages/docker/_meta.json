@@ -1,5 +1,5 @@
 {
-    "Commonly-Used-Command-Collection": "Docker에서 자주 쓰는 명령어 모음",
-    "How-to-Install-Docker-on-Ubuntu": "우분투에 도커 설치하는 방법"
+  "Commonly-Used-Command-Collection": "Docker에서 자주 쓰는 명령어 모음",
+  "How-to-Install-Docker-on-Ubuntu": "우분투에 도커 설치하는 방법",
+  "docker-build-cache-keeps-increasing": "도커 빌드 캐시가 계속 증가할 때 어떻게 해결하나"
 }
-  
