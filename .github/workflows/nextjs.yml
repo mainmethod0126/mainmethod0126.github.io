@@ -74,6 +74,9 @@ jobs:
           echo "github-workspace : ${{ github.workspace }}"
           cp "${{ github.workspace }}/google35a5466dfdfa011e.html" ./out
           cp "${{ github.workspace }}/navercb18aeb0875d47a7173de160b4087f5e.html" ./out
+          cp "${{ github.workspace }}/public/robots.txt" ./out
+          cp "${{ github.workspace }}/public/sitemap-0.xml" ./out
+          cp "${{ github.workspace }}/public/sitemap.xml" ./out
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
