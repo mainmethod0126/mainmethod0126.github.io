@@ -2,38 +2,11 @@ import { Callout } from "nextra/components";
 
 # elasticsearch 에서 사용하는 캐시들을 알아보자 (2024-04-17 기준 미완성, 현재 작성중)
 
-공홈에서 설명하는 캐시 : https://www.elastic.co/kr/blog/elasticsearch-caching-deep-dive-boosting-query-speed-one-cache-at-a-time
+[공홈에서 설명하는 캐시](https://www.elastic.co/kr/blog/elasticsearch-caching-deep-dive-boosting-query-speed-one-cache-at-a-time)
 
-## 페이지 캐시
+## 페이지 캐시 (Page Cache)
 
-리눅스 토발즈가 1995년에 리눅스 운영체제의 파일 시스템 관리를 개선하기 위해 가상 파일 시스템(VFS)과 실제 파일 시스템(FS) 사이에 캐시 계층을 도입하면서 이를 `페이지 캐시` 라고 부르게되었다
-
-간단하게 `리눅스의 파일 시스템 캐시 방식` 이라고 보면 된다
-
-파일 시스템 캐시의 정의는
-
-**파일 I/O 가 발생하면 캐시 레이어에 파일 핸들별로 파일 데이터를 캐싱해놓고 동일한 파일에 대한 I/O 발생 시 디스크가 아닌 메모리상의 캐시 데이터를 읽고쓰도록하여 파일 I/O 속도를 빠르게 하기 위한 목적이다.**
-
-<Callout type="info" emoji="❕">
-쓰기의 경우 캐시 메모리상의 데이터를 변경하고 해당 캐시의 데이터가
-변경되었음을 알리는 **dirty(변경됨) 플래그를 ON**한다 그러면 운영체제의
-`쓰기용 워커 스레드(flusher thread)` 가 주기적으로 **dirty 플래그가 ON**
-되어있는 캐시들을 찾아서 디스크에 쓰게 된다
-
-이렇게 뒤늦게 디스크에 쓰이는 것을 [쓰기 지연(writeback)](https://scslab-intern.gitbooks.io/linux-kernel-hacking/content/chapter16.html) 이라고 한다
-
-</Callout>
-
-흔히 알고있는 가상 메모리를 페이지 단위로 관리하는 **페이징 매커니즘과 다른 용어다**
-
-<Callout type="warning" emoji="❔">
-"아니 그럼 그냥 파일 시스템 캐시라고 하지 왜 페이지 캐시라고 부르는거야?"
-
-필자는 처음에 위와 같은 의문이 들었다.
-
-찾아보니 그냥 `페이지 단위` 로 캐싱하는 방식이라 `페이지 캐시` 라고 부르게된 것 같다.
-
-</Callout>
+간단하게 [리눅스의 파일 시스템 캐시 방식](https://mainmethod0126.github.io/linux/linux-page-cache) 이라고 보면 된다
 
 ### 엘라스틱서치 세그먼트 불변성과 페이지 캐시의 관계
 
@@ -77,25 +50,247 @@ A, B의 데이터가 하나로 압축되어 AB 라는 새로운 세그먼트 파
 
 ---
 
-## 샤드 레벨 요청 캐시
+## 샤드 요청 캐시 (Shard Request Cache)
 
-**집계로만 구성된 검색 결과를 캐싱함**
+**검색 결과를 반환하지 않는 검색 요청에 대한 캐시**
 
-## 쿼리 캐시
+쉽게 말해 **document 자체를 반환하지 않는 요청** 에 대한 캐시이다
+
+특징으로는
+
+- **총 힙의 1% 를 차지한다**
+- **기본적으로 활성화된다**
+- **요청 매개변수를 통해 document를 반환하는 경우에도 캐시를 사용하도록 할 수 있다**
+- **요청에 대한 전체 응답을 캐시한다**
+- `GET /_nodes/stats/indices/request_cache?human` 쿼리로 모니터링 가능하다
+
+### 캐시 Hit 조건
+
+샤드에 요청이 왔을 때 동일한 요청(쿼리)일 경우 hit된다
+
+예를들어 쿼리의 결과가 `인덱스A,B,C,D,E` 를 전부 포함하는 `A~E`라는 이름의 쿼리를 요청을 하고나서
+그 다음으로 `인덱스B,C,D,E,F` 를 전부 포함하는 `B~F`라는 이름의 쿼리를 요청하면
+
+첫번째 요청되었던 쿼리와 두번째 쿼리는 `인덱스 B,C,D,E` 라는 부분이 `완전 동일`하다.
+
+즉 `인덱스 B,C,D,E` 를 전부 포함하는 `B~E` 라는 쿼리를 `두번 요청한 것과 동일`하다
+
+그러므로 캐시가 **hit**된다
+
+물론 `인덱스A,B,C,D,E`를 두번 요청하거나,
+
+`인덱스B,C,D,E,F`를 두번 요청할 경우에도 당연히 캐시가 hit된다
+
+캐시가 얼만큼 히트되고있는지 쿼리를 통해 확인 가능하다
+
+```http filename="캐시 사용에 대한 통계 쿼리"
+GET /_nodes/stats/indices/request_cache?human
+```
+
+이제 **document 자체를 반환하지 않는 요청** 에 대한 예시를 알아보겠다
+
+### 집계 요청
+
+캐시하려면 `size : 0` 으로 `검색 결과를 반환하지 않음` 을 명시해야한다
+
+쇼핑몰에서 **`상품 카테고리 별 판매 량`** (예시 : `전자기기 : 100`, `책 : 3000`, `스포츠 용품 : 500`) 을 집계한다는 예시를 들어보겠다
+
+```json filename="상품 카테고리 별 판매량 집계 쿼리"
+GET /products/_search
+{
+  "size": 0,  // 검색 결과를 반환하지 않음
+  "aggs": {
+    "sales_per_category": {
+      "terms": {
+        "field": "category.keyword",
+        "size": 10
+      }
+    }
+  }
+}
+```
+
+```json filename="쿼리 결과"
+{
+  "took": 30,
+  "timed_out": false,
+  "_shards": {
+    "total": 5,
+    "successful": 5,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 10000,
+      "relation": "gte"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "sales_per_category": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 100,
+      "buckets": [
+        {
+          "key": "electronics",
+          "doc_count": 1500
+        },
+        {
+          "key": "clothing",
+          "doc_count": 1200
+        },
+        {
+          "key": "home appliances",
+          "doc_count": 800
+        },
+        {
+          "key": "books",
+          "doc_count": 400
+        },
+        {
+          "key": "sports",
+          "doc_count": 300
+        }
+        // 추가 카테고리 데이터는 생략
+      ]
+    }
+  }
+}
+```
+
+위와 같은 예시의 쿼리를 요청했을 때 검색된 **document 가 반환된 것이 아닌 집계 결과만 반환**되었다
+이럴때 쿼리 결과가 캐시된다
+
+### 카운트 요청
+
+카운트 요청 역시 **document를 반환하지 않는다**
+
+**지난 한 달 동안 특정 이벤트가 발생한 로그의 수**를 확인하는 요청을 예시로 들어보겠다
+
+```json filename="지난 한 달 동안 특정 이벤트가 발생한 로그 카운트 쿼리"
+GET /logs/_count
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {"term": {"event": "login"}},
+        {"range": {"timestamp": {"gte": "now-1M/M", "lte": "now/M"}}}
+      ]
+    }
+  }
+}
+```
+
+```json filename="쿼리 결과"
+{
+  "count": 2520,
+  "_shards": {
+    "total": 5,
+    "successful": 5,
+    "skipped": 0,
+    "failed": 0
+  }
+}
+```
+
+위와 같이 결과에는 `document 가 포함되어 있지 않다`
+마찬가지로 캐시된다
+
+### kibana 시각화
+
+필자는 kibana를 써보지 않아 모르기 때문에 링크로 대체한다 [공홈에서 설명하는 캐시](https://www.elastic.co/kr/blog/elasticsearch-caching-deep-dive-boosting-query-speed-one-cache-at-a-time)
 
 ---
 
-opster 에서 설명하는 캐시 : https://opster.com/guides/elasticsearch/glossary/elasticsearch-cache/
+## 노드 쿼리 캐시 (Node Query Cache)
 
-## 노드 요청 캐시
+`filter Context` 를 이용한 검색 결과가 `노드에 캐시`된다
 
-노드 요청 캐시는 필터 컨텍스트에 사용된 쿼리 결과를 유지한다
-결과는 가장 최근에 사용된 항목을 기준으로 제거된다
+- **`filter` 조건으로 검색해야 캐싱된다.**
+- **노드안에서 발생하는 모든 쿼리간에 공유된다**
+- **노드에 캐시된다**
+- **기본으로 heap 공간의 최대 10%를 사용한다**
+- **`GET /_nodes/stats/indices/query_cache?human` 쿼리로 모니터링 가능하다**
+- **`indices.queries.cache.count` 옵션으로 총 캐시 수량을 제한할 수 있다 기본값 : 10,000 개**
+- **`indices.queries.cache.size` 옵션으로 Java 힙 몇퍼센트를 사용할지 제한할 수 있다 기본값 : 10%**
+- **`bitset` 을 이용하여 캐시를 관리하다**
 
-## 샤드 데이터 캐시
+### 캐시 Hit 조건
 
-샤드 데이터 캐시는 크기
+동일한 `filter query` 에 한해서 hit 된다
 
-## 필드 데이터 캐시
+예시를 통해서 알아보자
 
----
+```json filename="filter 쿼리 예시"
+GET logs-*/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "message": "pcre2_get_error_message"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "@timestamp": {
+              "gte": "2021-02-01",
+              "lt": "2021-03-01"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+위 쿼리가 한번 실행되고나서 그 다음 쿼리들이
+
+```json filename="filter query"
+        //~~
+      "filter": [
+        {
+          "range": {
+            "@timestamp": {
+              "gte": "2021-02-01",
+              "lt": "2021-03-01"
+            }
+          }
+        }
+      ]
+      //~~
+```
+
+`filter query` 영역만 유지하고 다른 곳은 바꿔서 쿼리해도 동일한 `filter query`에 한해서는 `쿼리간에 캐시가 공유된다`
+
+만약에 `"gte": "2021-02-01"` 값을 `"gte": "2021-02-20"`, 과 같이 변경했다면, **캐시 데이터를 사용하지 않고 새로운 캐싱을 하게된다**
+
+### 내부 로직
+
+![picture 0](./images/lets-look-at-the-caches-used-in-elasticsearch-1713419867671.png)
+
+위 이미지와 같이 `filter 쿼리`가 발생하면 내부적으로 해당 `filter 쿼리`에 고유한 `bitmap` 을 생성하고, **한번 조회된 document에 비트마킹(bitset)**을 해놓는다
+그러면 다음번에 동일한 `filter 쿼리`가 발생했을 때 `bitmap에서 마킹된 document`를 반환한다
+
+## 필드 데이터 캐시 (Field Data Cache)
+
+`text field에 대해서 집계, 정렬 시 필드 데이터를 전부 캐싱한다`
+
+검색은 `"어떤 문서가 이 키워드를 포함하는지가 궁금"` 하지만
+집계와 정렬은 `"이 문서에서 이 field의 값이 무엇인지"` 가 궁금하기 때문에
+역인덱스 정보가 아닌 docmuent를 key로 value에 field 정보를 담은 데이터 구조가 필요하다.
+
+즉 역인덱스가 아닌 일반적인 인덱스(RDB의 그것) 방식이 필요하다 이를 `FieldData` 라고 하는데,
+이를 캐싱해놓는게 `필드 데이터 캐시`다
+
+`text field` 의 경우 `FieldData` 를 사용하는데 무지막지하게 `메모리`를 쓰기 때문에 `기본값은 false(비활성)다`
+`keyword field` 의 경우는 `doc_values` 를 사용하는데 이는 `디스크` 를 사용한 방식이 때문에 안정적입니다.
+
+- **집계 쿼리 및 정렬에 사용되는 필드 데이터를 모두 캐시한다**
+- **Text Field 에 한정되며 기본값은 false다**
