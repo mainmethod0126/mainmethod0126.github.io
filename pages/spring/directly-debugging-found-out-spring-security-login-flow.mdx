@@ -1,0 +1,43 @@
+# 직접 디버깅하면서 알아본 spring security login flow
+
+```java filename="WebSecurityConfig.java"
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    // ~~~
+    .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+            UsernamePasswordAuthenticationFilter.class);
+    // ~~~
+}
+```
+
+위와 같이 `JwtAuthenticationFilter` 가 `UsernamePasswordAuthenticationFilter` 전에 동작하도록 등록하였는데,
+`JwtAuthenticationFilter` 동작이 끝나면 `UsernamePasswordAuthenticationFilter` 가 동작해야할텐대 아무리봐도 동작하지 않는다,
+`getAuthentication()`이 `null` 이면 분기처리하면서 `pass` 시키나 했는데 그런 구문도 안보인다.
+도대체 어디서 스킵시키는지 너무 궁금해서 직접 디버깅 해본다
+
+---
+
+## 1. 서비스 실행과 Bean 등록
+
+`WebSecurityConfiguration` 클래스에서 `springSecurityFilterChain`라는 이름의 `Bean` 을 등록한다
+타입은 `Filter`
+
+```java filename="WebSecurityConfiguration.java"
+/**
+ * Creates the Spring Security Filter Chain
+ * @return the {@link Filter} that represents the security filter chain
+ * @throws Exception
+ */
+@Bean(name = AbstractSecurityWebApplicationInitializer.DEFAULT_FILTER_NAME)
+public Filter springSecurityFilterChain() throws Exception {
+    boolean hasConfigurers = webSecurityConfigurers != null
+            && !webSecurityConfigurers.isEmpty();
+    if (!hasConfigurers) {
+        WebSecurityConfigurerAdapter adapter = objectObjectPostProcessor
+                .postProcess(new WebSecurityConfigurerAdapter() {
+                });
+        webSecurity.apply(adapter);
+    }
+    return webSecurity.build();
+}
+```
