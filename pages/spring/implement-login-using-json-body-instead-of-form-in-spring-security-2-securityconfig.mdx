@@ -1,0 +1,54 @@
+# spring security 에서 form말고 json body를 받는 REST API login 구현하기 (2) - SecurityConfig
+
+[spring security 에서 form말고 json body를 받는 REST API login 구현하기 (1) - Filter](https://mainmethod0126.github.io/spring/implement-login-using-json-body-instead-of-form-in-spring-security-1-filter) 에서는
+Filter 생성에 대해서 알아보았고 이어서 `SecurityConfig` 셋팅에 대해서 알아보겠다
+
+## SecurityConfig 셋팅
+
+자 이제 Filter 생성이 끝났으니 Config 셋팅이 필요하다
+
+`WebSecurityConfigurerAdapter` 를 상속받은 Config 클래스가 하나 필요하다
+
+이름은 `WebSecurityConfig` 라고 하겠다
+
+```java filename="SecurityConfig.java"
+
+@RequiredArgsConstructor
+@EnableWebSecurity
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    private final JwtTokenProvider jwtTokenProvider;
+
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+
+        // 1
+        JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter = new JsonUsernamePasswordAuthenticationFilter(
+                jwtTokenProvider);
+        jsonUsernamePasswordAuthenticationFilter.setAuthenticationManager(authenticationManagerBean());
+
+        // 2
+        http.httpBasic().disable()
+                .authorizeRequests()
+                .addFilterBefore(jsonUsernamePasswordAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // 3
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), JsonUsernamePasswordAuthenticationFilter.class);
+    }
+}
+```
+
+설명할 부분을 남기고 최대한 생략하였다
+
+함수 단위로 알아보자
+
+### configure()
+
+`configure()` 함수는 인자로 받은 `HttpSecurity` 의 `configs` 에 구성들을 추가하는 용도이다
+
+1. `JsonUsernamePasswordAuthenticationFilter` 객체를 생성하면서 `jwtTokenProvider` 와 `AuthenticationManager` 를 주입합니다.
+2. 생성된 `jsonUsernamePasswordAuthenticationFilter` 객체를 `addFilterBefore()` 함수를 통하여 `UsernamePasswordAuthenticationFilter.class` 필터보다 먼저 동작하도록 등록합니다.
+3. `JwtAuthenticationFilter` 를 생성하면서 `jwtTokenProvider` 를 주입하고 먼저 등록된 `JsonUsernamePasswordAuthenticationFilter` 필터보다 먼저 동작하도록 등록합니다.
+
+- **jsonUsernamePasswordAuthenticationFilter : login 요청에 대한 인증 및 JWT 발급 Filter**
+- **JwtAuthenticationFilter : 요청에 포함된 JWT 를 검증하는 Filter**
