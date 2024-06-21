@@ -26,6 +26,7 @@
   "spring": "spring",
   "jpa": "jpa",
   "serialized-data-structure": "serialized data structure",
+  "webRTC": "webRTC",
   "etc": "etc",
   "tistory": {
     "title": "Tistory Blog ↗",
