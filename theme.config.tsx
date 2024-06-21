@@ -148,6 +148,9 @@ const config: DocsThemeConfig = {
       if (title === "serialized data structure") {
         return <>📒 {title}</>;
       }
+      if (title === "webRTC") {
+        return <>📒 {title}</>;
+      }
       if (title === "etc") {
         return <>📒 {title}</>;
       }
