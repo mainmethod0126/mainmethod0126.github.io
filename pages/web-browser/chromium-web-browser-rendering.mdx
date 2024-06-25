@@ -1,0 +1,86 @@
+# 크로미움 웹 브라우저 렌더링
+
+## Blink - 렌더링 엔진
+
+- WebKit(애플의 사파리에 들어가는 렌더링 엔진) 을 기반으로 구글에서 만든 렌더링 엔진이다 (포크 떠서 만듬)
+- 대부분의 Chromium 브라우저 에서 사용된다
+
+## 1. Blink Rendering Basics
+
+### 노드와 DOM 트리
+
+- HTML 을 파싱해서 DOM 트리를 생성한다
+
+### 노드에서 RenderObject로
+
+- DOM 트리의 각 노드에 해당하는 `RenderObject`가 있다
+- `RenderObject`는 렌더 트리라고 하는 병렬 트리 구조에 저장된다
+- `RenderObject`는 디스플레이 표면에 노드의 내용을 그리는 방법을 알고 있다
+- `GraphicsContext`에 필요한 그리기 호출을 발행하여 이를 수행한다
+- `GraphicsContext`는 최종적으로 화면에 표시되는 비트맵에 픽셀을 쓰는 일을 담당한다
+- Chrome에서 `GraphicsContext`는 2D 드로잉 라이브러리인 `Skia`를 래핑한다
+
+### RenderObject에서 RenderLayers로
+
+- 각 RenderObject는 상위 RenderObject를 통해 직접적으로 또는 간접적으로 RenderLayer와 연결
+- 동일한 좌표 공간을 공유하는(예: 동일한 CSS 변환의 영향을 받는) RenderObject는 일반적으로 동일한 RenderLayer에 속함
+- RenderLayers는 겹치는 콘텐츠, 반투명 요소 등을 적절하게 표시하기 위해 페이지의 요소가 올바른 순서로 합성되도록 존재합니다
+
+## 2. The Compositor
+
+## 3. The Threaded Compositor
+
+---
+
+## 부록
+
+### 노드와 DOM 트리
+
+Blink 는 HTML 을 파싱해서 노드 형식의 DOM 트리를 생성한다.
+
+#### DOM이란
+
+`document object model` 의 약자로 아래와 같은 형식을 갖는다
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>RenderObject Example</title>
+    <style>
+      #box {
+        width: 100px;
+        height: 100px;
+        background-color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="box"></div>
+  </body>
+</html>
+```
+
+```text
+#document
+ └── html
+      ├── head
+      └── body
+           └── div (id="box")
+```
+
+#### DOM 접근 및 사용
+
+- `document.getElementById()` : 특정 ID를 가진 요소를 선택하는 가장 빠르고 효율적인 방법
+
+```HTML
+document.getElementById('box');
+```
+
+- `document.querySelector()` : CSS 선택자를 사용하여 보다 유연하게 요소를 선택할 수 있습니다, (단 일치하는 첫번째 요소만 사용 가능)
+
+```HTML
+document.querySelector('head');
+```
+
+---
