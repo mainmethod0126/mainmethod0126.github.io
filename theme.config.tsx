@@ -151,6 +151,9 @@ const config: DocsThemeConfig = {
       if (title === "webRTC") {
         return <>📒 {title}</>;
       }
+      if (title === "electron") {
+        return <>📒 {title}</>;
+      }
       if (title === "etc") {
         return <>📒 {title}</>;
       }
