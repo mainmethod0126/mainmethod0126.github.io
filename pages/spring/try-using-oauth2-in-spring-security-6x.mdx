@@ -1,0 +1,66 @@
+# spring security 6.x 버전에서 oauth2 사용해보기
+
+## 1. OAuth2AuthorizationRequestRedirectFilter 를 통한 필터링
+
+`http://localhost:8080/oauth2/authorization/google` 로 들어온 요청을 캐치해서
+
+config 에 정의된 `redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"` 로 리다이렉트 시킨다, `response.sendRedirect(redirectUrl);` 이렇게 리스폰스 객체로 바로 리다이렉트 보내버림
+
+
+## 2. OAuth2LoginAuthenticationFilter 를 통한 인증 처리
+
+인증 완료되면 기본값으로 `"/"` path 로 리다이렉트 함, 그런데 서버가 `localhost:8080` 으로 동작 중이고, 웹 페이지가 `localhost:3000` 에서 동작중이면,
+`localhost:8080/` 로 리다이렉트되기 때문에 `/` 요청이 왔을 경우 로그인 요청이 왔던 `Referer` 주소로 리다이렉트 시켜줘야함
+
+이는 별도의 복잡한 코딩없이
+
+`successHandler.setUseReferer(true);` 만 해주면 요청했던 주소로 리다이렉트 됨
+
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    private AuthenticationSuccessHandler getSuccessHandler() {
+        var successHandler = new SavedRequestAwareAuthenticationSuccessHandler();
+        successHandler.setUseReferer(true);
+        return successHandler;
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+        http
+                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+                        .anyRequest().authenticated())
+                .oauth2Login(httpSecurity -> httpSecurity.successHandler(getSuccessHandler()));
+
+        return http.build();
+    }
+}
+```
+
+코드를 직접 타고가면서 확인한 로직,
+
+`AbstractAuthenticationTargetUrlRequestHandler` 클래스의 아래 함수를 보면 알 수 있음
+
+```java
+	/**
+	 * Builds the target URL according to the logic defined in the main class Javadoc.
+	 */
+	protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response) {
+		if (isAlwaysUseDefaultTargetUrl()) {
+			return this.defaultTargetUrl;
+		}
+		String targetUrlParameterValue = getTargetUrlParameterValue(request);
+		if (StringUtils.hasText(targetUrlParameterValue)) {
+			trace("Using url %s from request parameter %s", targetUrlParameterValue, this.targetUrlParameter);
+			return targetUrlParameterValue;
+		}
+		if (this.useReferer) {
+			trace("Using url %s from Referer header", request.getHeader("Referer"));
+			return request.getHeader("Referer");
+		}
+		return this.defaultTargetUrl;
+	}
+```
