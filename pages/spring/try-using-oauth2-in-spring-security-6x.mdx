@@ -9,6 +9,18 @@ config 에 정의된 `redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId
 
 ## 2. OAuth2LoginAuthenticationFilter 를 통한 인증 처리
 
+`Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)` 함수에서 인증 처리가 진행됨
+
+- 사용자 요청을 `OAuth2AuthorizationRequest authorizationRequest` 로 만듬
+- `authorizationRequest` 를 이용해 `OAuth2LoginAuthenticationToken authenticationRequest` 를 만듬
+```
+		OAuth2LoginAuthenticationToken authenticationResult = (OAuth2LoginAuthenticationToken) this
+			.getAuthenticationManager()
+			.authenticate(authenticationRequest);
+```
+- 위와 같이 `getAuthenticationManager` 를 이용하여 인증을 진행하여 `OAuth2LoginAuthenticationToken authenticationResult` 를 만들어냄
+
+
 인증 완료되면 기본값으로 `"/"` path 로 리다이렉트 함, 그런데 서버가 `localhost:8080` 으로 동작 중이고, 웹 페이지가 `localhost:3000` 에서 동작중이면,
 `localhost:8080/` 로 리다이렉트되기 때문에 `/` 요청이 왔을 경우 로그인 요청이 왔던 `Referer` 주소로 리다이렉트 시켜줘야함
 
