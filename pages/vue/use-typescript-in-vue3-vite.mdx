@@ -1,0 +1,39 @@
+# vue3 + vite 환경에서 typescript types 폴더 참조하기
+
+
+## src/types 생성
+
+`src/types` 에 `~.d.ts` 확장자를 모아놓기
+
+## tsconfig.app.json 설정
+
+```json
+{
+  "compilerOptions": {
+    //~~~
+  },
+  "include": [
+    "src/**/*.ts",
+    //~~~
+  ]
+}
+```
+
+tsconfig.app.json 파일의 `include` 목록에 `src/types` 를 참조할 수 있도록 `"src/**/*.ts"` 추가
+
+## src/types/sample.d.ts 샘플 .d.ts 파일 생성하여 테스트
+
+모듈로 인식할 수 있도록 상단에 `export {};` 추가
+
+```ts filename=src/types/sample.d.ts
+export {}; // 필수
+
+declare global {
+  interface Window {
+    sample: {
+      myName: string;
+    };
+  }
+}
+
+```
