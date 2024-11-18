@@ -60,6 +60,48 @@ System.out.println("서버 응답: " + response.getMessage());
 
 ---
 
-## Stream을 매개변수로하는 grpc 만들기
+## grpc client 에서 jwt 포함하여 호출하기
+
+
+```java
+public class JwtCallCredentials extends CallCredentials {
+    private final String jwt;
+
+    public JwtCallCredentials(String jwt) {
+        this.jwt = jwt;
+    }
+
+    @Override
+    public void applyRequestMetadata(RequestInfo requestInfo,
+            Executor appExecutor,
+            MetadataApplier applier) {
+        appExecutor.execute(() -> {
+            try {
+                Metadata headers = new Metadata();
+                headers.put(
+                        Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER),
+                        "Bearer " + jwt);
+                applier.apply(headers);
+            } catch (Throwable e) {
+                applier.fail(Status.UNAUTHENTICATED.withCause(e));
+            }
+        });
+    }
+}
+
+```
+```java
+public HelloWorldClient(Channel channel, CallCredentials callCredentials) {
+    blockingStub = GreeterGrpc.newBlockingStub(channel).withCallCredentials(callCredentials);
+}
+```
+```java
+HelloWorldClient client = new HelloWorldClient(channel, new JwtCallCredentials("asdadsad"));
+client.greet(user);
+```
+
+
+
+
 
 
