@@ -1,0 +1,107 @@
+# grpc-java 라이브러리를 사용해보자
+
+일단 grpc 용어좀 짚고가자
+
+## 채널 channel 
+
+- **네트워크 연결 관리** : 클라이언트와 서버간의 연결
+- **보안** : TLS/SSL 을 통한 보안 통신 가능
+- **상태 모니터링** : 채널은 서버 연결 상태(예: IDLE, CONNECTING, READY, TRANSIENT_FAILURE, SHUTDOWN)를 관리하고, 클라이언트가 이 상태를 추적할 수 있게 해줌
+
+### 채널의 생성과 관리
+
+채널은 한번 생성하면 재사용하는게 일반적임,
+**재사용도 다 하고 이제 쓸일 없으면 닫아야함**
+
+
+채널의 생성
+```java
+ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051)
+                    .usePlaintext()  // TLS를 적용하려면 .useTransportSecurity()를 사용
+                    .build();
+```
+
+채널 닫기
+```java
+channel.shutdown();
+```
+
+## 스텁 stub
+
+**"메소드 스텁(method stub) 혹은 간단히 스텁은 소프트웨어 개발에 쓰이고 다른 프로그래밍 기능을 대리하는 코드이다"
+서버에 있는 함수가 Client에는 없으니까 `서버의 함수를 호출하듯이 서버 함수를 대신해주는 대신맨` **
+
+
+### 동기 스텁 (blocking stub)
+동기 방식의 호출을 수행하며, 서버의 응답을 받을 때까지 클라이언트는 호출이 완료될 때까지 대기합니다.
+`예: HelloServiceGrpc.HelloServiceBlockingStub`
+
+### 비동기 스텁 (future stub)
+비동기 방식으로 Future 객체를 반환합니다. 응답을 즉시 기다릴 필요 없이 비동기 작업으로 처리할 수 있습니다.
+`예: HelloServiceGrpc.HelloServiceFutureStub`
+
+### 콜백 스텁 (async stub)
+비동기 방식으로 Future 객체를 반환합니다. 응답을 즉시 기다릴 필요 없이 비동기 작업으로 처리할 수 있습니다.
+`예: HelloServiceGrpc.HelloServiceFutureStub`
+
+### 스텁의 생성 및 사용
+
+```java
+HelloServiceGrpc.HelloServiceBlockingStub stub = HelloServiceGrpc.newBlockingStub(channel);
+
+HelloRequest request = HelloRequest.newBuilder()
+                    .setName("ChatGPT")
+                    .build();
+
+HelloResponse response = stub.sayHello(request);
+System.out.println("서버 응답: " + response.getMessage());
+```
+
+
+---
+
+## grpc client 에서 jwt 포함하여 호출하기
+
+
+```java
+public class JwtCallCredentials extends CallCredentials {
+    private final String jwt;
+
+    public JwtCallCredentials(String jwt) {
+        this.jwt = jwt;
+    }
+
+    @Override
+    public void applyRequestMetadata(RequestInfo requestInfo,
+            Executor appExecutor,
+            MetadataApplier applier) {
+        appExecutor.execute(() -> {
+            try {
+                Metadata headers = new Metadata();
+                headers.put(
+                        Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER),
+                        "Bearer " + jwt);
+                applier.apply(headers);
+            } catch (Throwable e) {
+                applier.fail(Status.UNAUTHENTICATED.withCause(e));
+            }
+        });
+    }
+}
+
+```
+```java
+public HelloWorldClient(Channel channel, CallCredentials callCredentials) {
+    blockingStub = GreeterGrpc.newBlockingStub(channel).withCallCredentials(callCredentials);
+}
+```
+```java
+HelloWorldClient client = new HelloWorldClient(channel, new JwtCallCredentials("asdadsad"));
+client.greet(user);
+```
+
+
+
+
+
+

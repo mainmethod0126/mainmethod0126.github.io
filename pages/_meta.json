@@ -27,6 +27,7 @@
   "jpa": "jpa",
   "serialized-data-structure": "serialized data structure",
   "webRTC": "webRTC",
+  "electron": "electron",
   "etc": "etc",
   "tistory": {
     "title": "Tistory Blog ↗",
