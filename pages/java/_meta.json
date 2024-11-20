@@ -8,5 +8,6 @@
   "lets-differentiate-between-base64-and-base64urlsafe": "base64와 base64UrlSafe를 구분해서 사용하자",
   "gradle-test-executor-encoding": "Gradle build 시 Test 코드 인코딩이 UTF-8로 인코딩 되지 않는 이유(실제 빌드시와 디버깅 시 테스트 결과가 다른 이유)",
   "generate-javadoc-for-private-modifiers-in-gradle": "gradle에서 javadoc생성시 private 제한자에 대한 문서 생성하기",
-  "java-predicate": "자바의 Predicate"
+  "java-predicate": "자바의 Predicate",
+  "lets-try-using-the-grpc-java-library": "grpc-java 라이브러리를 사용해보자"
 }
