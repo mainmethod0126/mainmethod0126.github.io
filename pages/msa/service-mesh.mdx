@@ -7,3 +7,34 @@
 
 
 ![picture 0](./images/service-mesh-1731569786877.png)  
+
+
+## rke 환경에서 istio 설치하기
+
+### istioctl 사용
+
+#### istioctl 다운로드
+```bash
+curl -L https://istio.io/downloadIstio | sh -
+cd istio-*
+export PATH=$PWD/bin:$PATH
+```
+
+#### istio 설치
+```bash
+istioctl install --set profile=demo -y
+```
+
+#### 설치 상태 확인
+```bash
+kubectl get pods -n istio-system
+```
+
+출력 예시
+```bash
+NAME                                    READY   STATUS    RESTARTS   AGE
+istio-ingressgateway-6fdd76d6d7-mz9ps   1/1     Running   0          2m
+istiod-8454df4fbb-7z8xz                 1/1     Running   0          2m
+```
+
+
