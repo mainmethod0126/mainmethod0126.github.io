@@ -1,0 +1,40 @@
+# 서비스 메시란?
+
+- API Gateway 와 서비스 메시는 다르다, 구조가 다름
+- 서비스메시의 인증은 API 게이트웨이단에서의 사용자 인증과는 거리가 멈,
+허가된 사용자의 요청인지 확인하는 것은 애플리케이션 보안단(API 게이트웨이 등)에서 해야할 일이며,
+서비스메시에서의 보안은 TLS 등의 패킷 자체에대한 보안으로 보임
+
+
+![picture 0](./images/service-mesh-1731569786877.png)  
+
+
+## rke 환경에서 istio 설치하기
+
+### istioctl 사용
+
+#### istioctl 다운로드
+```bash
+curl -L https://istio.io/downloadIstio | sh -
+cd istio-*
+export PATH=$PWD/bin:$PATH
+```
+
+#### istio 설치
+```bash
+istioctl install --set profile=demo -y
+```
+
+#### 설치 상태 확인
+```bash
+kubectl get pods -n istio-system
+```
+
+출력 예시
+```bash
+NAME                                    READY   STATUS    RESTARTS   AGE
+istio-ingressgateway-6fdd76d6d7-mz9ps   1/1     Running   0          2m
+istiod-8454df4fbb-7z8xz                 1/1     Running   0          2m
+```
+
+
