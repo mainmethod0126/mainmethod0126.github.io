@@ -1,0 +1,37 @@
+# k8s pod간의 통신에 사용되는 port
+
+보통 k8s 에서 pod 간의 통신을 할때는 네트워크를 추상화해주는 `service` 를 이용하여 통신한다
+
+아래 `sample-service.yaml` 을 예시로 보자
+
+```yaml filename="sample-service.yaml"
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-client-service
+  namespace: istio-test
+spec:
+  selector:
+    app: grpc-client # Deployment와 동일한 라벨
+  ports:
+    - protocol: TCP
+      port: 8082 # 서비스 포트
+      targetPort: 8080 # 컨테이너 포트
+      nodePort: 30003 # 클러스터 외부에서 접근할 포트
+  type: NodePort # NodePort 타입 추가
+```
+
+### port - pod 간의 통신은 요놈을 쓴다
+pod 간의 통신에서는 `port` 를 쓴다
+
+`pod <---> pod`
+
+### targetPort
+`port` 또는 `nodePort` 를 통하여 `service` 로 들어온 요청이 **도달할 pod 내부의 port이다**
+
+`요청 ---> port or nodePort ---> pod`
+
+### nodePort
+k8s 외부에서 deployment 에게 요청을 보낼때 사용되는 port다, 쉽게 **외부 요청 들어오는 용도** 라고 생각하면 된다
+
+`외부 요청 ---> nodePort ---> pod`
