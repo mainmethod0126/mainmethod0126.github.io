@@ -1,0 +1,26 @@
+# 랜처에서 디플로이먼트 로그볼 때 failed to create fsnotify watcher: too many open files 에러가 발생하는 이유
+
+```bash
+sysctl fs.inotify.max_user_instances
+sysctl fs.inotify.max_user_watches
+```
+
+host os `fs.inotify.max_user_instances` 또는 `fs.inotify.max_user_watches` 의 셋팅 값을 초과해서 발생할 가능성이 높음,
+
+`fs.inotify.max_user_instances` : 한 사용자가 동시에 생성할 수 있는 **inotify** 인스턴스의 총 개수를 제한
+`fs.inotify.max_user_watches` : 각 inotify 인스턴스가 감시할 수 있는 파일/디렉토리의 총 개수를 제한
+
+수정 방법은
+
+```bash
+sudo sysctl -w fs.inotify.max_user_instances=512
+sudo sysctl -w fs.inotify.max_user_watches=524288
+```
+
+요런식으로 가능하다
+
+## inotify 란?
+
+리눅스 커널에서 제공하는 **파일 시스템 이벤트 알림 시스템**
+파일 시스템에서 발생하는 이벤트를 애플리케이션이 실시간으로 감지할 수 있도록 돕는 메커니즘
+이를 통해 애플리케이션은 파일이나 디렉토리에 대한 변경 사항을 모니터링하고, 변경이 있을 때마다 즉시 알림을 받을 수 있다
