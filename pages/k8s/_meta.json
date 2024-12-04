@@ -1,3 +1,4 @@
 {
-  "minikube-used-local-on-premise-test-environment-creation": "minikube 사용한 로컬(온프라미스) 테스트 환경 만들기"
+  "minikube-used-local-on-premise-test-environment-creation": "minikube 사용한 로컬(온프라미스) 테스트 환경 만들기",
+  "how-to-always-pull-without-cache-when-pulling-docker-image-from-registry-pull-policy": "도커 이미지를 registry 에서 pull 했을때의 캐시없이 항상 pull 하는 방법 (pull policy)"
 }
