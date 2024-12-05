@@ -60,8 +60,11 @@ System.out.println("서버 응답: " + response.getMessage());
 
 ---
 
-## grpc client 에서 jwt 포함하여 호출하기
+## grpc 에서 jwt 포함하여 호출하기
 
+`CallCredentials` 을 확장하여 Request 마다 자동으로 `Authorization Header` 가 추가되도록 코드를 수정한다
+
+### grpc clinet
 
 ```java
 public class JwtCallCredentials extends CallCredentials {
@@ -79,7 +82,7 @@ public class JwtCallCredentials extends CallCredentials {
             try {
                 Metadata headers = new Metadata();
                 headers.put(
-                        Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER),
+                        Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
                         "Bearer " + jwt);
                 applier.apply(headers);
             } catch (Throwable e) {
@@ -90,17 +93,67 @@ public class JwtCallCredentials extends CallCredentials {
 }
 
 ```
+
+`blockingStub` 를 생성할때 `withCallCredentials(callCredentials);` 과 같이 callCredentials 확장 객체를 넣을 수 있다
+client 코드는 이게 다다
+
 ```java
 public HelloWorldClient(Channel channel, CallCredentials callCredentials) {
     blockingStub = GreeterGrpc.newBlockingStub(channel).withCallCredentials(callCredentials);
 }
 ```
+
 ```java
 HelloWorldClient client = new HelloWorldClient(channel, new JwtCallCredentials("asdadsad"));
 client.greet(user);
 ```
 
+### grpc server
 
+서버의 경우 `ServerInterceptor` 를 구현한 `JwtServerInterceptor` 를 생성 후 `Server` 객체에 등록하여 `Metadata` 인자에서 `Authorization` 헤더를 꺼내올 수 있다
+
+```java
+public class JwtServerInterceptor implements ServerInterceptor {
+
+    private static final Logger logger = Logger.getLogger(JwtServerInterceptor.class.getName());
+
+    @Override
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
+            ServerCall<ReqT, RespT> call,
+            Metadata headers,
+            ServerCallHandler<ReqT, RespT> next) {
+
+        // 헤더에서 JWT 토큰 추출
+        String jwt = headers.get(Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER));
+
+        if (jwt == null) {
+            logger.warning("JWT is null");
+            throw new IllegalArgumentException("jwt is null");
+        }
+
+        if (!jwt.startsWith("Bearer ")) {
+            logger.warning("not startsWith Bearer");
+            throw new IllegalArgumentException("not startsWith Bearer");
+        }
+
+        jwt = jwt.substring(7); // 'Bearer ' 제거
+
+        logger.info("Received JWT: " + jwt);
+
+        // 다음 핸들러 호출
+        return next.startCall(call, headers);
+    }
+}
+```
+
+이런식으로 구현된 `JwtServerInterceptor` 를 `ServerBuilder` 를 통하여 등록할 수 있는데
+```java
+server = Grpc.newServerBuilderForPort(port, InsecureServerCredentials.create())
+        .addService(ServerInterceptors.intercept(new GreeterImpl(), new JwtServerInterceptor()))
+        .build()
+        .start();
+```
+이런식으로 등록 가능하다
 
 
 
