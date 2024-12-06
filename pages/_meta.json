@@ -11,6 +11,7 @@
     "type": "separator"
   },
   "common": "common",
+  "network": "network",
   "linux": "linux",
   "msa": "msa",
   "docker": "docker",

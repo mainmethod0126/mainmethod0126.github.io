@@ -100,6 +100,9 @@ const config: DocsThemeConfig = {
       if (title === "common") {
         return <>📒 {title}</>;
       }
+      if (title === "network") {
+        return <>📒 {title}</>;
+      }
       if (title === "linux") {
         return <>📒 {title}</>;
       }
