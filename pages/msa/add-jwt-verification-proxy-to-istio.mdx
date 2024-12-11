@@ -1,0 +1,107 @@
+# istio에 jwt 검증 proxy 추가하기
+
+
+# 서비스 메시란?
+
+- API Gateway 와 서비스 메시는 다르다, 구조가 다름
+- 서비스메시의 인증은 API 게이트웨이단에서의 사용자 인증과는 거리가 멈,
+허가된 사용자의 요청인지 확인하는 것은 애플리케이션 보안단(API 게이트웨이 등)에서 해야할 일이며,
+서비스메시에서의 보안은 TLS 등의 패킷 자체에대한 보안으로 보임
+
+
+![picture 0](./images/service-mesh-1731569786877.png)  
+
+
+## rke 환경에서 istio 설치하기
+
+### istioctl 사용
+
+#### istioctl 다운로드
+```bash
+curl -L https://istio.io/downloadIstio | sh -
+cd istio-*
+export PATH=$PWD/bin:$PATH
+```
+
+#### istio 설치
+```bash
+istioctl install --set profile=demo -y
+```
+
+#### 설치 상태 확인
+```bash
+kubectl get pods -n istio-system
+```
+
+출력 예시
+```bash
+NAME                                    READY   STATUS    RESTARTS   AGE
+istio-ingressgateway-6fdd76d6d7-mz9ps   1/1     Running   0          2m
+istiod-8454df4fbb-7z8xz                 1/1     Running   0          2m
+```
+
+## PeerAuthentication 와 AuthorizationPolicy 셋팅하기
+
+### PeerAuthentication 란?
+
+서비스 간 트래픽의 인증을 설정하는 역할을 한다. 주로 트래픽의 인증 방법(예: mTLS, JWT 등)을 정의한다
+
+여기서는 `jwt 인증` 만 살펴보겠다
+
+```yaml filename="peer-authentication.yaml"
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: jwt-authentication
+  namespace: my-namespace
+spec:
+  jwt:
+    issuer: "https://auth.example.com"
+    jwksUri: "https://auth.example.com/.well-known/jwks.json"
+```
+
+- `apiVersion` : Istio의 보안 리소스가 사용하는 API 버전. v1beta1은 PeerAuthentication의 현재 안정적인 버전
+- `kind` : 리소스의 유형. 여기서는 PeerAuthentication을 정의.
+- `metadata.name` : 리소스의 이름.
+- `metadata.namespace` :  리소스가 적용될 네임스페이스. 특정 네임스페이스에만 영향을 미침
+- `spec.jwt.issuer` : JWT 토큰의 발급자(iss 클레임). 필수.
+- `spec.jwt.jwksUri` : JWT 서명 키를 가져오는 URI (JWKS). 이 URI에서 공개 키를 가져와 토큰 검증에 사용.
+- `spec.jwt.audiences` : JWT 토큰의 aud 클레임과 일치해야 하는 값. 리스트로 제공하며 여러 Audience를 지정 가능.
+
+### AuthorizationPolicy 란?
+
+요청을 필터링하거나 특정 조건에 맞는 요청만 허용하기 위해 사용
+
+```yaml filename="authorization-policy.yaml"
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: jwt-authz-policy
+  namespace: my-namespace
+spec:
+  selector:
+    matchLabels:
+      app: my-app
+  rules:
+    - from:
+        - source:
+            requestPrincipals: ["*"]
+      to:
+        - operation:
+            methods: ["GET", "POST"]
+```
+
+- `apiVersion` : Istio의 보안 리소스가 사용하는 API 버전.
+- `kind` : 리소스 유형. 여기서는 AuthorizationPolicy를 정의.
+- `metadata.name` : 리소스의 이름.
+- `metadata.namespace` : 이 정책이 적용될 네임스페이스.
+- `spec.selector` : 정책이 적용될 대상 Pod를 지정, Pod에 할당된 라벨과 matchLabels 조건이 일치하는 경우 정책이 적용.
+- `spec.selector.matchLabels` : 라벨 기반 선택기. 특정 Pod를 지정하기 위해 라벨과 일치하는 조건을 설정.
+- `spec.rules` : 요청을 허용하거나 차단하기 위한 규칙
+- `from` : 요청의 출처를 기반으로 필터링.
+- `from.source` : 요청의 출처를 정의.
+- `from.requestPrincipals` : JWT 토큰의 주체 (sub 또는 iss/sub)에 따라 요청 필터링. *은 모든 요청을 허용.
+- `to` : 요청의 대상(HTTP 메서드, 경로 등)을 기반으로 필터링.
+- `to.operation` : 요청의 속성(HTTP 메서드, 경로 등)을 정의.
+- `to.methods` : 허용할 HTTP 메서드 (예: GET, POST).
+- `to.paths` : 특정 경로를 필터링.
