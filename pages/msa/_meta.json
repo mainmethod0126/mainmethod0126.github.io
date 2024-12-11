@@ -1,3 +1,4 @@
 {
-  "service-discovery": "서비스 디스커버리란?"
+  "service-discovery": "서비스 디스커버리란?",
+  "add-jwt-verification-proxy-to-istio": "istio에 jwt 검증 proxy 추가하기"
 }
