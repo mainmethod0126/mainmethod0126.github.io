@@ -1,0 +1,82 @@
+import { Callout } from "nextra/components";
+
+
+# CORS 란
+
+CORS 정말 간단하게 살펴보자
+
+사용자가 `은행` 사이트에 접속해서 온라인 뱅킹을 하고있다고 가정하자
+
+이때 `공격자(해커)` 가 은행 웹 사이트를 제공하는 서버에 취약점을 발견하여 자신이 만든 `악성 웹사이트` 접속 URL을 은행 사이트 어딘가에 숨겨놓았다.
+
+```
+은행 도메인 : bank.com
+악성 웹 사이트 도메인 : copy.back.com
+```
+
+이 `악섭 웹 사이트` 접속할 경우 브라우저 스토리지에 저장된 `인증 정보` 를 찾아서 이를 통해 `은행 송금 API`를 호출하여 공격자의 통장으로 입금되도록 해놓는다
+
+이렇게되면 사용자가 은행 웹 사이트를 이용하다가 자신도 모르는 사이에 공격자의 통장으로 송금을 해버리는 문제가 발생한다
+
+`브라우저(chrome, edge, sarfari 등)` 는 이를 방지하기 위해 서버 Service 가 보내주는 `Access-Control-Allow-Origin` 라는 값에 허용되는 도메인이 아닐 경우 `Request` 자체를 차단시켜버린다
+
+서버가 보내는 `Access-Control-Allow-Origin` 의 예시는 보통 아래와 같다
+
+```
+Access-Control-Allow-Origin : * : 클라이언트의 도메인이 무엇이든 허용하겠다
+Access-Control-Allow-Origin : back.com : 클라이언트의 도메인이 bank.com 일 때만 허용하겠다
+```
+
+차단 자체는 브라우저에서 하는 거기 때문에 브라우저에서 정책을 꺼버리면 그냥 `Request`를 그대로 진행해버린다.
+
+이때 브라우저는 서버로 보내는 요청에 자동으로 `Origin` 이라는 헤더를 추가하는데 예시는 아래와 같다
+
+```
+정상적인 은행 웹 사이트에서 Request를 보낼 때
+Origin : bank.com
+
+악성 웹 사이트에서 Request를 보낼 때
+Origin : copy.bank.com
+```
+
+브라우저는 Request에 붙어있는 `Origin` 값과 서버가 보내준 `Access-Control-Allow-Origin` 을 비교하여 일치하는 값이 있을 경우에만 `Request`를 허용한다
+
+<Callout type="warning" emoji="❔">
+"Access-Control-Allow-Origin 를 받았다는 건 이미 서버에서 응답을 보낸거 아니냐? 이미 Request를 보냈는데 그 이후에 차단하는게 무슨 의미냐"
+</Callout>
+
+정확하다, 애초에 Request가 가야 `Access-Control-Allow-Origin` 를 받을 수 있는데, 그러면 이미 Request를 보내버린 시점이라 그 이후 차단은 무의미하다.
+
+그렇기 때문에 브라우저는 실제 Request가 발생하기 전, 서버로 부터 `Access-Control-Allow-Origin` 을 확인하기 위한 `Request를 하나 더 보낸다` 이를 `Preflight 요청` 이라고 한다
+
+## Preflight 요청
+
+`Preflight Request`의 경우 일반적으로 `OPTIONS` Method를 사용하게 된다
+
+1. Client 코드에서 `송금API Request` 를 시도한다
+2. 브라우저가 먼저 `송금API Request Url` 쪽에 `OPTIONS` Method를 이용하여 `Origin` 을 포함한 `Preflight Request` 를 보낸다
+3. 서버는 이에 응답으로 `Access-Control-Allow-Origin` 를 반환한다
+4. `Origin` 과 `Access-Control-Allow-Origin` 를 비교하여 허용된 `Origin` 일 때 `송금API Request` 를 보낸다
+
+Preflight Request 예시
+
+```
+OPTIONS /api/remittance HTTP/1.1
+Host: bank.com
+Origin: https://bank.com
+```
+
+## 요약
+
+브라우저가 실제 Request 전 `Origin` 헤더를 포함한 `Preflight Request` 를 보내는데 이때 응답으로 오는 `Access-Control-Allow-Origin` 과 `Origin` 를 비교하여 허용되지 않은 `Origin`이면 실제 Request를 보내지 않음
+
+
+
+
+
+
+
+
+
+
+
