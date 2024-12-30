@@ -1,3 +1,6 @@
+import { Callout } from "nextra/components";
+
+
 # istio에 jwt 검증 proxy 추가하기
 
 
@@ -40,41 +43,32 @@ istio-ingressgateway-6fdd76d6d7-mz9ps   1/1     Running   0          2m
 istiod-8454df4fbb-7z8xz                 1/1     Running   0          2m
 ```
 
-## PeerAuthentication 와 AuthorizationPolicy 셋팅하기
+## RequestAuthentication 와 AuthorizationPolicy 셋팅하기
 
-### PeerAuthentication 란?
 
-서비스 간 트래픽의 인증을 설정하는 역할을 한다. 주로 트래픽의 인증 방법(예: mTLS, JWT 등)을 정의한다
+### RequestAuthentication 란?
 
-**`PeerAuthentication` 는 `namespace` 범위로 적용되기에 같은 목적일 경우 하나만 존재하면 된다**
+**RequestAuthentication**은 HTTP 요청에서 JWT 검증을 수행하기 위한 리소스.
 
-여기서는 `jwt 인증` 만 살펴보겠다
-
-```yaml filename="peer-authentication.yaml"
-apiVersion: security.istio.io/v1beta1
-kind: PeerAuthentication
+```yaml filename="requestAuthentication-yaml "
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
 metadata:
-  name: jwt-authentication
-  namespace: my-namespace
+  name: httpbin
+  namespace: foo
 spec:
-  mtls:
-    mode: DISABLE
-  jwt:
-    issuer: "https://auth.example.com"
-    jwksUri: "https://auth.example.com/.well-known/jwks.json"
+  selector:
+    matchLabels:
+      app: httpbin
+  jwtRules:
+  - issuer: "issuer-foo"
+    jwksUri: https://example.com/.well-known/jwks.json
 ```
 
-- `apiVersion` : Istio의 보안 리소스가 사용하는 API 버전. v1beta1은 PeerAuthentication의 현재 안정적인 버전
-- `kind` : 리소스의 유형. 여기서는 PeerAuthentication을 정의.
-- `metadata.name` : 리소스의 이름.
-- `metadata.namespace` :  리소스가 적용될 네임스페이스. 특정 네임스페이스에만 영향을 미침
-- `spec.mtls.mode` : 클라이언트, 서버 간의 TLS 상호 인증 기능 비활성화
-- `spec.jwt.issuer` : JWT 토큰의 발급자(iss 클레임). 필수.
-- `spec.jwt.jwksUri` : JWT 서명 키를 가져오는 URI (JWKS). 이 URI에서 공개 키를 가져와 토큰 검증에 사용.
-- `spec.jwt.audiences` : JWT 토큰의 aud 클레임과 일치해야 하는 값. 리스트로 제공하며 여러 Audience를 지정 가능.
-
-
-
+- `selector` : app: httpbin 라벨이 있는 Pod에 적용
+- `jwtRules` : JWT 토큰의 검증 규칙을 정의
+- `issuer` : JWT 토큰의 iss 클레임 값과 비교하여 발급자를 검증.
+- `jwksUri` : JWT 토큰 서명을 검증하기 위한 공개 키를 포함한 JWKS URI.
 
 
 ### AuthorizationPolicy 란?
@@ -118,29 +112,6 @@ spec:
 - `to.paths` : 특정 경로를 필터링.
 
 
-
-### RequestAuthentication 란?
-
-```yaml filename="requestAuthentication-yaml "
-apiVersion: security.istio.io/v1
-kind: RequestAuthentication
-metadata:
-  name: httpbin
-  namespace: foo
-spec:
-  selector:
-    matchLabels:
-      app: httpbin
-  jwtRules:
-  - issuer: "issuer-foo"
-    jwksUri: https://example.com/.well-known/jwks.json
-```
-
-- `selector` : app: httpbin 라벨이 있는 Pod에 적용
-- `jwtRules` : JWT 토큰의 검증 규칙을 정의
-- `issuer` : JWT 토큰의 iss 클레임 값과 비교하여 발급자를 검증.
-- `jwksUri` : JWT 토큰 서명을 검증하기 위한 공개 키를 포함한 JWKS URI.
-
 ## RequestAuthentication + AuthorizationPolicy
 
 ```yaml filename="RequestAuthentication"
@@ -158,6 +129,13 @@ spec:
     jwksUri: https://example.com/.well-known/jwks.json
 ```
 
+<Callout type="info" emoji="ℹ">
+`namespace` 전체에 적용하는 쉬운 방법은 `selector: {}` 와 같이 설정하면 되는데, 이러면 `Warning: workload selector specified without labels` 경고가 발생한다, istio는 namespace전체에 그냥 냅다 적용하는 방식을 권장하지 않는 것으로 보인다
+특별한 이유가 없다면 `selector.matchLabels.app` 까지 명시하는게 좋아보인다.
+</Callout>
+
+
+
 ```yaml filename="AuthorizationPolicy"
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
@@ -174,15 +152,70 @@ spec:
           requestPrincipals: ["issuer-foo/subject@example.com"]
 ```
 
-**RequestAuthentication**은 HTTP 요청에서 JWT 검증을 수행하기 위한 리소스.
-**PeerAuthentication**은 서비스 간 mTLS 인증 또는 네트워크 수준 인증을 설정하는 데 사용.
+
 
 
 ### 등록 방법
 
 `kubectl apply -f authorization-policy.yaml`
+
 `kubectl apply -f peer-authentication.yaml`
 
-이런식으로 등록할 수 있다
+#### 사이드카 주입
 
+여기서 `사이드카`란 **소프트웨어 설계에서 주 애플리케이션 컨테이너와 함께 실행되는 보조 컨테이너를 의미한다**
 
+jwt검증을 해주는 istio-proxy 를 각 파드별로 사이드카 등록을 해줘야한다
+
+1. 네임스페이스에 사이드카 주입 라벨이 설정되어있는지 확인
+`kubectl get namespace <namespace name> --show-labels`
+출력에 istio-injection=enabled 라벨이 없으면 추가
+`kubectl label namespace <namespace name> istio-injection=enabled`
+
+2. Deployment를 다시 배포하여 사이드카가 주입되도록 변경
+`kubectl rollout restart deployment <deployment name> -n <namespace name>`
+
+3. 재배포된 Pod에 istio-proxy가 포함되었는지 확인
+`kubectl describe pod <pod-name> -n <namespace name>`
+
+#### 만약 사이트카를 해제하고 싶다면?
+
+네이스페이스에 사이트카 주입을 비허용시키고 사이트주입을 해제하고 싶던 디플로이먼트를 재시작하면된다
+
+1. 네임스페이스 라벨 확인
+`kubectl get namespace <namespace-name> --show-labels`
+
+2. 라벨 제거
+`kubectl label namespace <namespace-name> istio-injection-`
+
+2. Deployment를 다시 배포하여 사이드카 주입이 해제되도록 변경
+`kubectl rollout restart deployment <deployment name> -n <namespace name>`
+
+#### 아예 특정 Deployment 가 사이트가 주입이 안되도록 하려면?
+
+해당 deploment의 yaml 에 `metadata.annotations.sidecar.istio.io/inject: "false"` 를 지정하면된다
+
+아래는 yaml 의 예시이다
+
+```yaml filename="sample-deployment.yaml"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-app
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-app
+  template:
+    metadata:
+      labels:
+        app: example-app
+      annotations:
+        sidecar.istio.io/inject: "false" # 사이드카 주입 비활성화
+    spec:
+      containers:
+        - name: example-app
+          image: example-app:latest
+```
