@@ -168,14 +168,19 @@ spec:
 jwt검증을 해주는 istio-proxy 를 각 파드별로 사이드카 등록을 해줘야한다
 
 1. 네임스페이스에 사이드카 주입 라벨이 설정되어있는지 확인
+
 `kubectl get namespace <namespace name> --show-labels`
+
 출력에 istio-injection=enabled 라벨이 없으면 추가
+
 `kubectl label namespace <namespace name> istio-injection=enabled`
 
 2. Deployment를 다시 배포하여 사이드카가 주입되도록 변경
+
 `kubectl rollout restart deployment <deployment name> -n <namespace name>`
 
 3. 재배포된 Pod에 istio-proxy가 포함되었는지 확인
+
 `kubectl describe pod <pod-name> -n <namespace name>`
 
 #### 만약 사이트카를 해제하고 싶다면?
@@ -183,12 +188,15 @@ jwt검증을 해주는 istio-proxy 를 각 파드별로 사이드카 등록을 �
 네이스페이스에 사이트카 주입을 비허용시키고 사이트주입을 해제하고 싶던 디플로이먼트를 재시작하면된다
 
 1. 네임스페이스 라벨 확인
+
 `kubectl get namespace <namespace-name> --show-labels`
 
 2. 라벨 제거
+
 `kubectl label namespace <namespace-name> istio-injection-`
 
-2. Deployment를 다시 배포하여 사이드카 주입이 해제되도록 변경
+3. Deployment를 다시 배포하여 사이드카 주입이 해제되도록 변경
+
 `kubectl rollout restart deployment <deployment name> -n <namespace name>`
 
 #### 아예 특정 Deployment 가 사이트가 주입이 안되도록 하려면?
