@@ -227,3 +227,19 @@ spec:
         - name: example-app
           image: example-app:latest
 ```
+
+### jwkUri 로 부터 keyset 을 가져왔는지 확인하는 방법
+
+####  Istio Control Plane (istiod) 로그 확인
+
+- `kubectl get pods -n istio-system` 명령어로 istiod pod name 확인
+
+```
+NAME                                    READY   STATUS    RESTARTS   AGE
+istio-egressgateway-568ccc69d8-ccftb    1/1     Running   0          43d
+istio-ingressgateway-64fc6d787b-5lxjm   1/1     Running   0          43d
+istiod-cdfc8b464-gwbxd                  1/1     Running   0          43d
+```
+
+- `kubectl logs -n istio-system istiod-cdfc8b464-gwbxd` 과 같이 istiod pod name을 넣어서 로그 확인
+
