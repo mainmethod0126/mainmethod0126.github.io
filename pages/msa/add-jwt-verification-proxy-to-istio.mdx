@@ -199,7 +199,7 @@ jwt검증을 해주는 istio-proxy 를 각 파드별로 사이드카 등록을 �
 
 `kubectl rollout restart deployment <deployment name> -n <namespace name>`
 
-#### 아예 특정 Deployment 가 사이트가 주입이 안되도록 하려면?
+#### 아예 특정 Deployment 에 사이트카 주입이 안되도록 하려면?
 
 해당 deploment의 yaml 에 `metadata.annotations.sidecar.istio.io/inject: "false"` 를 지정하면된다
 
