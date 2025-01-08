@@ -6,10 +6,8 @@ import { Callout } from "nextra/components";
 
 # 서비스 메시란?
 
-- API Gateway 와 서비스 메시는 다르다, 구조가 다름
-- 서비스메시의 인증은 API 게이트웨이단에서의 사용자 인증과는 거리가 멈,
-허가된 사용자의 요청인지 확인하는 것은 애플리케이션 보안단(API 게이트웨이 등)에서 해야할 일이며,
-서비스메시에서의 보안은 TLS 등의 패킷 자체에대한 보안으로 보임
+- API Gateway 와 서비스 메시는 다르다
+- 서비스 메시는 사이드카를 이용하여 원하는 서비들에 proxy를 추가하는 방식
 
 
 ![picture 0](./images/service-mesh-1731569786877.png)  
@@ -287,16 +285,11 @@ spec:
 | **`k`**       | 필수          | 대칭 키 값. Base64url로 인코딩된 값.                                                                        | `"Gawgg...WKav7"`                |
 
 
-
-
-
-
-
 ### jwks 란?
 
 `JWK`는 단일 키를 나타내며, 여러 키를 포함하는 경우는 **JSON Web Key Set (JWKS)**를 사용한다
 
-[RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) 에서 Section 5 - JWK Set Format 을 참고하며되며
+자세한 정보는 [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) 에서 **Section 5 - JWK Set Format** 을 참고
 
 ```json filename="jwks.json"
 {
@@ -324,10 +317,10 @@ spec:
 
 ### jwks(키셋) 얻어오는 방법 
 
-`RequestAuthentication.spec.jwtRules` 에 공개키셋을 얻어올 수 있는 uri 를 지정하면 된다
+`RequestAuthentication.spec.jwtRules` 에 키셋을 얻어올 수 있는 uri 를 지정하면 된다
 이때 얻어오는 jwks.json 또는 json body는 꼭 jwks 표준 형식을 지켜야한다
 
-#### .json 파일을 통하여 keyset을 획득하는 방식
+#### .json 파일을 통하여 jwks을 획득하는 방식
 
 ```yaml filename="RequestAuthenticationSample"
 apiVersion: security.istio.io/v1
@@ -344,7 +337,7 @@ spec:
     jwksUri: https://example.com/.well-known/jwks.json
 ```
 
-#### json body를 반환하는 api를 통하여 keyset을 획득하는 방식
+#### json body를 반환하는 api를 통하여 jwks을 획득하는 방식
 
 ```yaml filename="RequestAuthenticationSample"
 apiVersion: security.istio.io/v1
@@ -361,7 +354,7 @@ spec:
     jwksUri: https://example.com/api/jwks
 ```
 
-### jwksUri 로 부터 keyset 을 성공적으로 가져왔는지 확인하는 방법
+### jwksUri 로 부터 jwks을 성공적으로 가져왔는지 확인하는 방법
 
 ####  Istio Control Plane (istiod) 로그 확인
 
