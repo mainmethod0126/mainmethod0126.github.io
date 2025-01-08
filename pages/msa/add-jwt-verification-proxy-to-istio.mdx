@@ -4,7 +4,7 @@ import { Callout } from "nextra/components";
 # istio에 jwt 검증 proxy 추가하기
 
 
-# 서비스 메시란?
+## 서비스 메시란?
 
 - API Gateway 와 서비스 메시는 다르다
 - 서비스 메시는 사이드카를 이용하여 원하는 서비들에 proxy를 추가하는 방식
@@ -47,6 +47,9 @@ istiod-8454df4fbb-7z8xz                 1/1     Running   0          2m
 ### RequestAuthentication 란?
 
 **RequestAuthentication**은 HTTP 요청에서 JWT 검증을 수행하기 위한 리소스.
+jwt를 검증하여 유요하지 않을 경우 요청을 거절시키는 역할을 한다
+단순 jwt 검증만 할거라면 사실 이것만 있으면 됨
+
 
 ```yaml filename="requestAuthentication-yaml "
 apiVersion: security.istio.io/v1
@@ -61,17 +64,28 @@ spec:
   jwtRules:
   - issuer: "issuer-foo"
     jwksUri: https://example.com/.well-known/jwks.json
+    forwardOriginalToken: true
 ```
 
 - `selector` : app: httpbin 라벨이 있는 Pod에 적용
 - `jwtRules` : JWT 토큰의 검증 규칙을 정의
 - `issuer` : JWT 토큰의 iss 클레임 값과 비교하여 발급자를 검증.
 - `jwksUri` : JWT 토큰 서명을 검증하기 위한 공개 키를 포함한 JWKS URI.
+- `forwardOriginalToken` : JWT가 검증된 후에도 Authorization 헤더를 유지하여 서버로 전달. 생략시 기본값 `false`
+
+
+<Callout type="info" emoji="ℹ">
+`namespace` 전체에 적용하는 쉬운 방법은 `selector: {}` 와 같이 설정하면 되는데, 이러면 `Warning: workload selector specified without labels` 경고가 발생한다, istio는 namespace전체에 그냥 냅다 적용하는 방식을 권장하지 않는 것으로 보인다
+특별한 이유가 없다면 `selector.matchLabels.app` 까지 명시하는게 좋아보인다.
+</Callout>
+
 
 
 ### AuthorizationPolicy 란?
 
 요청을 필터링하거나 특정 조건에 맞는 요청만 허용하기 위해 사용
+jwt 검증 이후에 추가 필터링(특정 URL 요청만 허용) 하려면 이것도 추가하면 좋다
+하지만 단순 jwt 검증만 할거라면 필요없다
 
 **`AuthorizationPolicy` 는 `app` 별로 적용되기에 적용되어야할 `app` 이 여러개라면 똑같이 여러개의 `AuthorizationPolicy` 를 생성해야한다**
 
@@ -108,49 +122,6 @@ spec:
 - `to.operation` : 요청의 속성(HTTP 메서드, 경로 등)을 정의.
 - `to.methods` : 허용할 HTTP 메서드 (예: GET, POST).
 - `to.paths` : 특정 경로를 필터링.
-
-
-## RequestAuthentication + AuthorizationPolicy
-
-```yaml filename="RequestAuthentication"
-apiVersion: security.istio.io/v1
-kind: RequestAuthentication
-metadata:
-  name: httpbin
-  namespace: foo
-spec:
-  selector:
-    matchLabels:
-      app: httpbin
-  jwtRules:
-  - issuer: "issuer-foo"
-    jwksUri: https://example.com/.well-known/jwks.json
-```
-
-<Callout type="info" emoji="ℹ">
-`namespace` 전체에 적용하는 쉬운 방법은 `selector: {}` 와 같이 설정하면 되는데, 이러면 `Warning: workload selector specified without labels` 경고가 발생한다, istio는 namespace전체에 그냥 냅다 적용하는 방식을 권장하지 않는 것으로 보인다
-특별한 이유가 없다면 `selector.matchLabels.app` 까지 명시하는게 좋아보인다.
-</Callout>
-
-
-
-```yaml filename="AuthorizationPolicy"
-apiVersion: security.istio.io/v1beta1
-kind: AuthorizationPolicy
-metadata:
-  name: httpbin-policy
-  namespace: foo
-spec:
-  selector:
-    matchLabels:
-      app: httpbin
-  rules:
-  - from:
-      - source:
-          requestPrincipals: ["issuer-foo/subject@example.com"]
-```
-
-
 
 
 ### 등록 방법
@@ -367,5 +338,81 @@ istio-ingressgateway-64fc6d787b-5lxjm   1/1     Running   0          43d
 istiod-cdfc8b464-gwbxd                  1/1     Running   0          43d
 ```
 
-- `kubectl logs -n istio-system istiod-cdfc8b464-gwbxd` 과 같이 istiod pod name을 넣어서 로그 확인
+- `kubectl logs -n istio-system istiod-cdfc8b464-gwbxd` 과 같이 istiod pod name을 넣어서 로그 확인, 별도의 `error` 로그가 없다면 정상적으로 가져오는 것
+
+### Request Header / Params 에서 jwt 가져오기
+
+istio는 기본적으로 `Authentication Header` 에 담겨져있는 jwt를 검증한다.
+이를 그대로 사용하는게 좋은데 만약 바꾸고자하면 방법이 있다
+
+#### 다른 헤더에서 JWT 검증
+
+```yaml filename="RequestAuthenticationSample"
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: custom-header-jwt
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  jwtRules:
+    - issuer: "https://your-issuer.com"
+      jwksUri: "https://your-issuer.com/.well-known/jwks.json"
+      fromHeaders:
+        - name: "X-Custom-Authorization"  # JWT가 담긴 헤더 이름
+          valuePrefix: "Bearer "          # JWT 토큰의 접두사 (필요 없으면 생략 가능)
+```
+
+#### 쿼리 파라미터에서 JWT 검증
+
+```yaml filename="RequestAuthenticationSample"
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: query-param-jwt
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  jwtRules:
+    - issuer: "https://your-issuer.com"
+      jwksUri: "https://your-issuer.com/.well-known/jwks.json"
+      fromParams:
+        - "access_token"  # JWT가 담긴 쿼리 파라미터 이름
+```
+
+### istio는 JWT 검증 완료 후 Authentication Header 를 삭제한다
+
+istio 는 기본적으로 jwt 검증이 완료되면 `Authentication Header` 를 `삭제`하고나서 실제 서비스한테 전달한다
+istio가 도입되기 전부터 동작하던 서비스들이면, 비즈니스 로직상에 jwt를 확인하는 경우가 있을 수 있는데
+`Authentication Header` 가 없어지면 문제가 발생할 수 있으니 검증 후에도 살려놔야한다
+
+아마 증상이 발생했다면 RequestAuthentication에서 `forwardOriginalToken: true` 가 생략되어있을 가능성이 있다 기본 값이 `false`로 Authentication Header 를 삭제한다
+
+```yaml filename="requestAuthentication-yaml "
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: httpbin
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  jwtRules:
+  - issuer: "issuer-foo"
+    jwksUri: https://example.com/.well-known/jwks.json
+    forwardOriginalToken: true
+```
+
+
+
+```
+
+
+
+
 
