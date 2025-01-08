@@ -62,7 +62,7 @@ spec:
     matchLabels:
       app: httpbin
   jwtRules:
-  - issuer: "issuer-foo"
+  - issuer: "https://your-issuer.com"
     jwksUri: https://example.com/.well-known/jwks.json
     forwardOriginalToken: true
 ```
@@ -304,7 +304,7 @@ spec:
     matchLabels:
       app: httpbin
   jwtRules:
-  - issuer: "issuer-foo"
+  - issuer: "https://your-issuer.com"
     jwksUri: https://example.com/.well-known/jwks.json
 ```
 
@@ -321,7 +321,7 @@ spec:
     matchLabels:
       app: httpbin
   jwtRules:
-  - issuer: "issuer-foo"
+  - issuer: "https://your-issuer.com"
     jwksUri: https://example.com/api/jwks
 ```
 
@@ -351,7 +351,7 @@ istio는 기본적으로 `Authentication Header` 에 담겨져있는 jwt를 검�
 apiVersion: security.istio.io/v1
 kind: RequestAuthentication
 metadata:
-  name: custom-header-jwt
+  name: httpbin
   namespace: foo
 spec:
   selector:
@@ -359,7 +359,7 @@ spec:
       app: httpbin
   jwtRules:
     - issuer: "https://your-issuer.com"
-      jwksUri: "https://your-issuer.com/.well-known/jwks.json"
+      jwksUri: https://example.com/.well-known/jwks.json
       fromHeaders:
         - name: "X-Custom-Authorization"  # JWT가 담긴 헤더 이름
           valuePrefix: "Bearer "          # JWT 토큰의 접두사 (필요 없으면 생략 가능)
@@ -403,7 +403,7 @@ spec:
     matchLabels:
       app: httpbin
   jwtRules:
-  - issuer: "issuer-foo"
+  - issuer: "https://your-issuer.com"
     jwksUri: https://example.com/.well-known/jwks.json
     forwardOriginalToken: true
 ```
