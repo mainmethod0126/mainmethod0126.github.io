@@ -47,8 +47,10 @@ istiod-8454df4fbb-7z8xz                 1/1     Running   0          2m
 ### RequestAuthentication 란?
 
 **RequestAuthentication**은 HTTP 요청에서 JWT 검증을 수행하기 위한 리소스.
-jwt를 검증하여 유요하지 않을 경우 요청을 거절시키는 역할을 한다
+jwt를 검증하여 유효하지 않을 경우 요청을 거절시키는 역할을 한다
 단순 jwt 검증만 할거라면 사실 이것만 있으면 됨
+
+exp 와 시그니처가 검증에 쓰인다
 
 
 ```yaml filename="requestAuthentication-yaml "
