@@ -1,0 +1,91 @@
+# istio에서 grpc 사용 시 path 기반 jwt 인증 또는 인증 예외 처리 방법
+
+istio 가 서비스 메시로 동작하는 환경에서 grpc 통신을 사용할 경우, public api같이 일부 api들은 jwt 인증을 예외처리할 필요가 있다
+단순 rest api 였으면 그냥 path 기반으로 하면된는데 grpc는 어떻게 할 수 있는지 알아보자
+
+## path 기반 예외
+
+grpc 에서도 path 기반 예외가 유효하다
+하지만 rest api 같은 url 형식이 아니다
+
+```proto
+syntax = "proto3";
+
+package mypackage;
+
+service MyService {
+  rpc SayHello(HelloRequest) returns (HelloReply) {}
+  rpc SayGoodbye(HelloRequest) returns (HelloReply) {}
+}
+```
+
+위와 같은 `proto3` 파일이 있을 때 `path` 는 `/<PackageName>.<ServiceName>/<MethodName>` 형식으로 생성된다
+
+`POST /mypackage.MyService/SayHello` 
+`POST /mypackage.MyService/SayGoodbye`
+
+
+### package 가 없을 경우는?
+
+```proto
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "my.package";
+
+// The greeting service definition.
+service Greeter {
+  // Sends a greeting. Original method.
+  rpc SayHello (HelloRequest) returns (HelloReply) {}
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  // The name of the user.
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+  // The greeting message.
+  string message = 1;
+}
+```
+
+위와 같이 `package` 를 사용하지 않을 경우
+
+`/<ServiceName>/<MethodName>` 형식으로 생성된다
+
+`/Greeter/SayHello`
+
+## AuthorizationPolicy 에서 path 기반 처리
+
+grpc path가 어떻게 생성되는지 확인했으니, 이제 path기반 처리를 해줘야한다
+istio의 AuthorizationPolicy 에서 paths 를 지정한다
+
+```yaml filename="authorization-policy.yaml"
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: grpc-server-jwt-authz-policy
+  namespace: istio-test
+spec:
+  selector:
+    matchLabels:
+      app: grpc-server
+  rules:
+      to:
+        - operation:
+            paths: ["/Greeter/SayHello"]
+```
+
+## 
+
+
+
+
+
+
+
+
+
