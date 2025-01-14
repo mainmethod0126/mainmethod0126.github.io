@@ -44,14 +44,21 @@ istiod-8454df4fbb-7z8xz                 1/1     Running   0          2m
 ## RequestAuthentication 와 AuthorizationPolicy 셋팅하기
 
 
+`RequestAuthentication`: 들어오는 요청의 JWT 토큰을 검증하고, 성공 시 “인증 정보(principal/claims)”를 Istio 내부에 전달
+
+`AuthorizationPolicy`: 검증된 “인증 정보”를 토대로, 요청을 허용(allow)하거나 거부(deny)
+
+
 ### RequestAuthentication 란?
 
 **RequestAuthentication**은 HTTP 요청에서 JWT 검증을 수행하기 위한 리소스.
-jwt를 검증하여 유효하지 않을 경우 요청을 거절시키는 역할을 한다
-단순 jwt 검증만 할거라면 사실 이것만 있으면 됨
+기본적으로 `Authorization` 헤더에 붙어오는 jwt 를 검증하며, 검증 결과 유효하지 않은 jwt일 경우 거절한다.
+`Authorization` 헤더가 없을 경우 검증 자체를 생략하여 요청을 그냥 패스시켜버린다
+`Authorization` 헤더가 없는 요청에 대한 거절은 아래 나올 `AuthorizationPolicy` 를 이용해야한다
 
-exp 와 시그니처가 검증에 쓰인다 
-
+검증 항목
+- `exp`
+- `시그니처`
 
 ```yaml filename="requestAuthentication-yaml "
 apiVersion: security.istio.io/v1
@@ -411,8 +418,68 @@ spec:
 ```
 
 
+## 인증이 불필요한 API 요청은 JWT 검증 패스시키기
 
+JWT 검증 필요없이 요청할 수 있는 public 한 API 가 있을 수 있다
+그러면 istio에서 해당 API 에 대한 요청이면 JWT 검증을 패스시키는 기능이 필요하다
+
+### RequestAuthentication 만 설정되어 있는 경우
+
+그냥 Authorization 헤더 없이 요청을 보내면 검증 자체를 패스해버린다
+
+### RequestAuthentication + AuthorizationPolicy 로 설정되어 있는 경우
+
+대부분 이 방식을 사용할 것이다
+
+`RequestAuthentication` 의 경우 그냥 `Authorization` 헤더 없이 요청을 보내면 검증 자체를 패스해버린다
+
+그러면 남은건 `AuthorizationPolicy` 인데
+
+```yaml filename="authorization-policy.yaml"
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: jwt-authz-policy
+  namespace: istio-test
+spec:
+  selector:
+    matchLabels:
+      app: my-server
+  rules:
+      - to:
+        - operation:
+            paths: ["/hello"]
 ```
+
+위와 같이 to.operation.paths 만 지정하면 그냥 통과다,
+만약 유효하지 않은 jwt를 보냈을 경우 `거절` 하고 싶으면 아래와 같이 `from.source.requestPrincipals` 를 같이 지정해야한다
+
+```yaml filename="authorization-policy.yaml"
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: jwt-authz-policy
+  namespace: istio-test
+spec:
+  selector:
+    matchLabels:
+      app: my-server
+  rules:
+    - from:
+        - source:
+            requestPrincipals: ["*"] 
+      to:
+        - operation:
+            paths: ["/hello"]
+```
+
+
+
+
+
+
+
+
 
 
 

@@ -1,6 +1,48 @@
+import { Callout } from "nextra/components";
+
 #  istio 에서 ssl/tls 통신
 
-istio 외부 -> istio 내부 : ingress gateway 사용
-istio 내부 -> istio 내부 : 사이드카 프록시(envoy) 사용
+## istio 외부 -> istio 내부
+
+- ingress gateway 사용
+
+---
+
+## istio 내부 -> istio 내부
+
+- 사이드카 프록시(envoy) 사용
+- Istio에서 mTLS가 활성화된 상태라면, 애플리케이션(서비스 A, B) 입장에서 일반 gRPC 호출을 하더라도 사이드카 프록시(Envoy)가 통신 구간을 자동으로 TLS로 암호화해줌
+
+
+### PeerAuthentication 를 이용한 특정 namespace 내의 모든 서비스에 ssl/tls 지정
+
+네임스페이스 내의 모든 서비스에 대해 mTLS 모드를 `STRICT`로 설정
+
+  <Callout type="info" emoji="🧑🏻‍💻">
+  **mTLS란?**
+
+      양방향 TLS 통신,
+      우리가 보통 사용하는 HTTPS 의 경우 단방향 TLS로, Client만 인증서 검증을 진행하는데 mTLS는 양쪽 다 인증서 검증을 진행한다
+  </Callout>
+
+
+```yml filename="SamplePeerAuthentication.yml"
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: ssl-test-policy
+  namespace: istio-test
+spec:
+  mtls:
+    mode: STRICT
+```
+
+**STRICT** : 서비스 간 통신 시 반드시 mTLS를 사용한다는 의미
+
+### namespace-level vs mesh-level
+
+**namespace-level 설정:** 위 예시처럼 특정 네임스페이스에만 적용할 수도 있음
+
+**mesh-level 설정:** PeerAuthentication 리소스를 `istio-system` 네임스페이스에 `name: default`로 생성하면, 전체 mesh에 적용할 수도 있음
 
 

@@ -3,6 +3,9 @@
 istio 가 서비스 메시로 동작하는 환경에서 grpc 통신을 사용할 경우, public api같이 일부 api들은 jwt 인증을 예외처리할 필요가 있다
 단순 rest api 였으면 그냥 path 기반으로 하면된는데 grpc는 어떻게 할 수 있는지 알아보자
 
+
+
+
 ## path 기반 예외
 
 grpc 에서도 path 기반 예외가 유효하다
@@ -79,7 +82,6 @@ spec:
             paths: ["/Greeter/SayHello"]
 ```
 
-## 
 
 
 
