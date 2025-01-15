@@ -453,6 +453,8 @@ spec:
 
 위와 같이 to.operation.paths 만 지정하면 그냥 통과다,
 만약 유효하지 않은 jwt를 보냈을 경우 `거절` 하고 싶으면 아래와 같이 `from.source.requestPrincipals` 를 같이 지정해야한다
+`requestPrincipals`은 앞서 `RequestAuthentication` 에서 `jwt` 검증이 완료되면 생성되는 값으로,
+`spring security` 를 해본 사람이라면 인증된 `Authentication` 객체로부터 `Principal` 을 얻어왔던 경험이 있을텐대 이와 비슷한 매커니즘이다
 
 ```yaml filename="authorization-policy.yaml"
 apiVersion: security.istio.io/v1
