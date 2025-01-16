@@ -66,6 +66,11 @@ message HelloReply {
 grpc path가 어떻게 생성되는지 확인했으니, 이제 path기반 처리를 해줘야한다
 istio의 AuthorizationPolicy 에서 paths 를 지정한다
 
+
+### 특정 path 항상 허용 
+
+`to.operation.paths` 만 지정하면 됨
+
 ```yaml filename="authorization-policy.yaml"
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -77,9 +82,34 @@ spec:
     matchLabels:
       app: grpc-server
   rules:
-    to:
+    - to:
       - operation:
           paths: ["/Greeter/SayHello"]
+```
+
+### 특정 path에 대해서 인가 안된 요청 차단
+
+모든 `Principal` 에 대해서 허용
+`Principal` 은 `RequestAuthentication` 에서 `jwt` 등에 대한 인가가 완료되면 생성됨
+만약 `jwt`가 없이 요청을 보냈거나 만료된 `jwt` 또는 시그니처가 다른 `jwt`일 경우 `Principal` 이 생성되지 않기에 요청이 차단됨
+
+```yaml filename="authorization-policy.yaml"
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: grpc-server-jwt-authz-policy
+  namespace: istio-test
+spec:
+  selector:
+    matchLabels:
+      app: grpc-server
+  rules:
+    - from:
+        - source:
+            requestPrincipals: ["*"] 
+      to:
+        - operation:
+            paths: ["/Greeter/SayHello"]
 ```
 
 
