@@ -1,4 +1,6 @@
 {
   "service-discovery": "서비스 디스커버리란?",
-  "add-jwt-verification-proxy-to-istio": "istio에 jwt 검증 proxy 추가하기"
+  "add-jwt-verification-proxy-to-istio": "istio에 jwt 검증 proxy 추가하기",
+  "istio-proxy-ssl": "istio에서 ssl/tls 통신하기 위한 방법",
+  "istio-grpc-path-based-jwt-authentication-or-authentication-exception-handling-method": "istio에서 grpc 사용 시 path 기반 jwt 인증 또는 인증 예외 처리 방법"
 }

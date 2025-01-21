@@ -1,0 +1,317 @@
+# CommonJS vs ES Module: 자바스크립트 모듈 시스템 완벽 가이드
+
+## 모듈 시스템이란?
+
+모듈 시스템은 자바스크립트 코드를 재사용 가능한 단위로 분리하고 관리하는 방법을 제공합니다. 코드를 모듈화함으로써 다음과 같은 이점을 얻을 수 있습니다:
+
+- 코드의 재사용성 향상
+- 의존성 관리의 용이성
+- 네임스페이스 충돌 방지
+- 코드의 캡슐화와 은닉화
+- 더 나은 코드 구조화와 유지보수성
+
+## CommonJS
+
+CommonJS는 Node.js에서 채택한 모듈 시스템으로, 서버 사이드 자바스크립트를 위해 설계되었습니다.
+
+### 주요 특징
+
+```javascript
+// 모듈 내보내기
+module.exports = {
+    someFunction: function() {},
+    someValue: 42
+};
+
+// 또는
+exports.someFunction = function() {};
+exports.someValue = 42;
+
+// 모듈 가져오기
+const myModule = require('./myModule');
+```
+
+### 동작 방식
+1. 동기적 로딩: 모듈이 순차적으로 로드됨
+2. 모듈 캐싱: 한 번 로드된 모듈은 메모리에 캐시됨
+3. 값의 복사: require로 가져온 객체는 복사본임
+
+## ES Module
+
+ES Module은 ECMAScript 2015(ES6)에서 도입된 표준 모듈 시스템으로, 브라우저 환경을 고려하여 설계되었습니다.
+
+### 주요 특징
+
+```javascript
+// named export
+export const someFunction = () => {};
+export const someValue = 42;
+
+// default export
+export default class MyClass {};
+
+// 모듈 가져오기
+import { someFunction, someValue } from './myModule';
+import MyClass from './myModule';
+import * as myModule from './myModule';
+```
+
+### 동작 방식
+1. 정적 분석: 임포트/익스포트가 파일의 최상위 레벨에서 정적으로 결정됨
+2. 비동기 로딩: 필요한 모듈을 병렬로 로드 가능
+3. Live binding: 익스포트된 값의 실제 바인딩을 참조
+
+## 주요 차이점
+
+1. **문법적 차이**
+   - CommonJS: require()와 module.exports 사용
+   - ES Module: import와 export 키워드 사용
+
+2. **로딩 방식**
+   - CommonJS: 동기적 로딩
+   - ES Module: 비동기적 로딩 (더 나은 성능)
+
+3. **정적 vs 동적**
+   - CommonJS: 런타임에 동적으로 모듈 로딩 가능
+   - ES Module: 정적 분석으로 빌드 타임 최적화 가능
+
+4. **사용 환경**
+   - CommonJS: 주로 Node.js 환경
+   - ES Module: 브라우저와 Node.js 모두 지원
+
+
+## 모듈 시스템 도입 전후 비교
+
+### 도입 이전의 문제점
+
+1. **전역 스코프 오염**
+```javascript
+// math.js
+function add(a, b) {
+    return a + b;
+}
+
+// utils.js
+function add(str1, str2) {    // 이름 충돌! 전역 스코프의 add 함수를 덮어씀
+    return str1 + str2;
+}
+```
+
+2. **스크립트 의존성 관리**
+```html
+<!-- 순서가 매우 중요했음 -->
+<script src="jquery.js"></script>
+<script src="bootstrap.js"></script>    <!-- jquery 의존성 필요 -->
+<script src="app.js"></script>         <!-- 위 라이브러리들 의존성 필요 -->
+```
+
+3. **네임스페이스 패턴 사용**
+```javascript
+// 전역 오염을 피하기 위한 네임스페이스 패턴
+var MyApp = {
+    math: {
+        add: function(a, b) {
+            return a + b;
+        }
+    },
+    utils: {
+        add: function(str1, str2) {
+            return str1 + str2;
+        }
+    }
+};
+```
+
+### 도입 이후의 개선점
+
+1. **모듈 스코프**
+```javascript
+// math.js
+export function add(a, b) {
+    return a + b;
+}
+
+// utils.js
+export function add(str1, str2) {    // 다른 모듈이라 이름 충돌 없음
+    return str1 + str2;
+}
+
+// app.js
+import { add as mathAdd } from './math.js';
+import { add as stringAdd } from './utils.js';
+```
+
+2. **의존성 자동 관리**
+```javascript
+// 의존성이 자동으로 관리됨
+import { Component } from 'react';
+import { render } from 'react-dom';
+import { MyComponent } from './components/MyComponent';
+```
+
+3. **캡슐화**
+```javascript
+// module.js
+const privateFunction = () => {    // 모듈 내부에서만 접근 가능
+    return 'private';
+};
+
+export const publicFunction = () => {    // 외부로 공개할 기능만 export
+    return privateFunction();
+};
+```
+
+## Named Export와 Default Export의 차이
+
+### Named Export
+
+1. **여러 개의 값을 내보낼 수 있음**
+```javascript
+// utils.js
+export const add = (a, b) => a + b;
+export const subtract = (a, b) => a - b;
+export const multiply = (a, b) => a * b;
+
+// app.js
+import { add, subtract } from './utils';  // 필요한 것만 가져올 수 있음
+import * as utils from './utils';         // 전체를 가져올 수도 있음
+```
+
+2. **이름이 고정됨**
+```javascript
+// 반드시 동일한 이름을 사용해야 함 (as로 별칭은 가능)
+import { add as sum, subtract as minus } from './utils';
+```
+
+3. **정적 분석이 용이**
+```javascript
+// 빌드 타임에 사용되는 export를 파악할 수 있음
+export const config = {
+    api: 'https://api.example.com',
+    timeout: 5000
+};
+```
+
+### Default Export
+
+1. **모듈당 하나의 default export만 가능**
+```javascript
+// MyComponent.js
+const MyComponent = () => {
+    return <div>Hello</div>;
+};
+
+export default MyComponent;
+
+// app.js
+import MyComponent from './MyComponent';    // 중괄호 없이 임포트
+import CustomName from './MyComponent';     // 원하는 이름으로 임포트 가능
+```
+
+2. **이름 변경이 자유로움**
+```javascript
+// math.js
+export default function add(a, b) {
+    return a + b;
+}
+
+// 다른 파일에서
+import sum from './math';         // 원하는 이름으로 임포트
+import addition from './math';    // 이름이 달라도 동작
+```
+
+### 사용 가이드라인
+
+1. **Named Export 선호하는 경우**
+   - 라이브러리나 유틸리티 함수들
+   - 여러 개의 독립적인 기능을 제공할 때
+   - 정적 분석과 트리 쉐이킹이 중요할 때
+
+```javascript
+// utils.js
+export const formatDate = (date) => { /* ... */ };
+export const formatCurrency = (amount) => { /* ... */ };
+export const formatNumber = (num) => { /* ... */ };
+```
+
+2. **Default Export 선호하는 경우**
+   - React 컴포넌트
+   - 클래스
+   - 모듈의 주요 기능이 하나일 때
+
+```javascript
+// UserProfile.js
+class UserProfile extends Component {
+    /* ... */
+}
+
+export default UserProfile;
+```
+
+3. **혼합 사용**
+```javascript
+// api.js
+export const BASE_URL = 'https://api.example.com';
+export const getHeaders = () => { /* ... */ };
+
+export default class ApiClient {
+    /* ... */
+}
+```
+    
+
+## 충돌 문제
+
+### 1. 혼용 시 발생하는 문제
+
+```javascript
+// 🚫 잘못된 사용
+const myModule = require('./esModule'); // ES 모듈을 CommonJS로 임포트
+import { something } from './commonjsModule'; // CommonJS를 ES 모듈로 임포트
+```
+
+### 2. 해결 방법
+
+1. **package.json 설정**
+```json
+{
+    "type": "module" // ES Module 사용
+    // 또는
+    "type": "commonjs" // CommonJS 사용
+}
+```
+
+2. **확장자 구분**
+- `.mjs`: ES Module
+- `.cjs`: CommonJS
+
+3. **interop 헬퍼 사용**
+```javascript
+// ES Module에서 CommonJS 모듈 사용
+import cjsModule from 'cjs-module';
+const { createRequire } = require('module');
+const require = createRequire(import.meta.url);
+```
+
+## 결론
+
+### ES Module 선택을 추천하는 이유
+
+1. **표준화**: ECMAScript 표준의 일부로 장기적인 지원 보장
+2. **성능**: 정적 분석과 트리 쉐이킹 가능
+3. **브라우저 호환성**: 브라우저에서 네이티브 지원
+4. **더 나은 개발 경험**: 더 명확한 문법과 IDE 지원
+
+### 단, 다음 경우 CommonJS 고려
+
+1. 레거시 Node.js 프로젝트 유지보수
+2. 동적 모듈 로딩이 필수적인 경우
+3. 즉시 실행이 필요한 서버 사이드 스크립트
+
+### 미래 전망
+
+- ES Module이 산업 표준으로 자리잡는 추세
+- 대부분의 새로운 프로젝트는 ES Module 채택
+- CommonJS는 레거시 지원을 위해 당분간 공존할 것으로 예상
+
+이러한 이해를 바탕으로, 새로운 프로젝트를 시작할 때는 ES Module을 사용하는 것이 미래 지향적인 선택이 될 것입니다.
