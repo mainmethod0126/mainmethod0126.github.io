@@ -1,0 +1,67 @@
+# nextjs에서 재빌드 없이 외부 config.js 파일로 부터 config 주입 받는 방법
+
+## config 파일 작성
+일단 config를 작성할 config.js 파일이 필요하다
+
+```ts filename="config.js"
+window.config = {
+    myname: "woosub"
+}
+```
+
+ 이런식으로 config 작성한다
+
+꼭 `window.config` 를 확장할 필요는 없으나, 이게 뭔가 표준 같아보이고 편리하다
+
+## layout.tsx 에 Script 추가
+
+layout.tsx 의 body 태그 내부에 `<Script src="/config.js" strategy="beforeInteractive" />` 를 추가한다
+
+|strategy 값|	실행 타이밍|	용도|
+|---|---|---|
+|beforeInteractive|	Hydration 전에 실행|	전역 설정, 초기 환경 변수, Polyfill|
+|afterInteractive|	Hydration 후 실행|	분석 도구(GA, Facebook Pixel) 등|
+|lazyOnload|	페이지 로드 완료 후 실행|	비필수 스크립트 (예: 광고 SDK)|
+
+```ts filename="layout.tsx"
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className={`${notoSansKR.variable}`}>
+      <body className="overflow-y-hidden h-full bg-white">
+        <Script src="/config.js" strategy="beforeInteractive" />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+## typescript 사용 시 window.config type 확장
+
+typescript 사용 시 그냥 `window.config` 를 호출하면 내가 추가한 config 들이 타입으로 안잡히니 아래와 같이 확장해줘야함
+
+```ts filename="windowConfig.d.ts"
+export { };
+
+declare global {
+    interface Window {
+        config: {
+            myname: string
+        };
+    }
+}
+```
+
+## 사용법
+
+이제 내가 추가한 config 를 코드상에서 불러올 수 있다
+
+```ts
+console.log(window.config.myname);
+```
+
+만약 실서비스로 배포되었을때도 재빌드없이 `<Script src="/config.js" strategy="beforeInteractive" />` 에 명시된 경로상의 `config.js` 파일을 수정하기만 하면 config 를 적용할 수 있다
+

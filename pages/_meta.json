@@ -24,6 +24,7 @@
   "security": "security",
   "kafka": "kafka",
   "vue": "vue",
+  "nextjs": "nextjs",
   "spring": "spring",
   "jpa": "jpa",
   "serialized-data-structure": "serialized data structure",

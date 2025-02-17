@@ -1,3 +1,4 @@
 {
-  "commonjs-vs-esmodule": "CommonJs vs ES Module"
+  "commonjs-vs-esmodule": "CommonJs vs ES Module",
+  "how-to-inject-config-from-external-config-js-file-in-nextjs-without-rebuild": "재빌드 없이 외부 config.js 파일로 부터 config 주입 받는 방법"
 }
