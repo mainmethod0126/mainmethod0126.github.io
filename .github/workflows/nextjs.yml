@@ -78,7 +78,7 @@ jobs:
           cp "${{ github.workspace }}/public/sitemap-0.xml" ./out
           cp "${{ github.workspace }}/public/sitemap.xml" ./out
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./out
 
