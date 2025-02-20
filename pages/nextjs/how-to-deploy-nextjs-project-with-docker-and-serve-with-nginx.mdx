@@ -1,0 +1,132 @@
+# nextjs프로젝트를 도커로 배포하고 nginx로 서비스하는 방법
+
+서버는 우분투라고 가정합니다
+
+---
+
+## 서버 사이드 방식 배포
+
+### 빌드 및 결과물 서버에 업로드
+
+일단 빌드
+`npm run build`
+
+아래 빌드 결과물을 서버의 동일 경로에 모두 업로드
+
+- `.next/` : 빌드된 결과물
+- `package.json` : Next.js 실행을 위해 필요
+- `node_modules/` : 서버에서 npm install을 수행할 수 없다면 포함
+- `public` : 정적 파일, 예를들어 `404page.html`, `배너 이미지` 등등
+
+
+### 서버에 node 설치 (설치되어있을 경우 생략)
+
+먼저 `nvm` 을 설치 후 nvm을 이용해서 `node`를 설치합니다
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
+source ~/.bashrc
+```
+
+#### lts 최신 받기
+
+```bash
+nvm install --lts
+```
+
+#### 특정 버전 받기
+
+```bash
+nvm install 18
+nvm use 18
+nvm alias default 18
+```
+
+#### 설치 확인
+
+```
+node -v   # Node.js 버전 확인
+npm -v    # npm 버전 확인
+```
+
+`nvm alias default 18` : 서버 재부팅하거나 터미널 재연결해도 특정 버전을 사용하겠다고 고정하는 역할인데, 불필요시 생략 가능
+
+### nextjs 서비스 Start
+
+
+빌드 결과물이 업로드된 디렉토리를 현재 경로로 이동 후
+
+`npm start` 실행
+
+
+### OS 서비스에 등록하여 재부팅 후에도 자동 실행되게 하기
+
+일반적인 서버라면 보통 재부팅후에도 자동 켜지게 등록한다, 말이 옵션이지 사실상 필수로 해야한다
+
+#### 서비스 파일 생성
+
+```bash
+sudo nano /etc/systemd/system/mynextjs.service
+```
+
+```ini filename="mynextjs.service"
+[Unit]
+Description=Next.js Server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/var/www/my-next-app
+ExecStart=/usr/bin/npm start
+Restart=always
+Environment=NODE_ENV=production
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=nextjs
+
+[Install]
+WantedBy=multi-user.target
+```
+
+- `User=myubuntu` : 서비스 실행할 계정 선택
+- `WorkingDirectory=/var/www/my-next-app` : Next.js 프로젝트 빌드 결과물이 업로드된 경로
+- `ExecStart=/usr/bin/npm start` : nvm을 사용하는 경우 /home/ubuntu/.nvm/versions/node/v18.18.2/bin/npm start로 변경 필요
+
+
+#### 서비스 등록
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable mynextjs  # mynextjs.service 파일의 앞부분이 서비스 이름입니다
+```
+#### 서비스 실행
+
+```bash
+sudo systemctl start mynextjs
+```
+
+#### 서비스 상태 확인
+
+```bash
+sudo systemctl status mynextjs
+
+```
+
+#### 서비스 로그 확인
+
+```bash
+journalctl -u mynextjs -f
+```
+
+#### 서비스 중지 및 삭제
+
+```bash
+sudo systemctl stop mynextjs
+sudo systemctl disable mynextjs
+```
+
+---
+
+
+
