@@ -1,0 +1,168 @@
+# 양방향 맵핑의 의존관계 주인에 대해서 알아보자
+
+의존관계 주인 개념은 양방향 맵핑에서 나온다
+
+정말 **중요한 점은 의존당하는 쪽에서 의존관계 주인 정보를 아무리 바꿔봤자 외래키는 바뀌지 않음**
+
+다시 말하면 외존관계 주인이란 `외래키를 바꿀 권한이 있는 쪽`을 말한다
+
+## entity 구조를 보고 누가 의존관계 주인인지 확인하는 방법
+
+`JoinColumn` 이 붙은 쪽이 `주인`
+
+`mappedBy` 가 붙은 쪽이 `당하는 쪽`
+
+## 예시
+
+`회사(Company)` 와 `직원(Employee)` 이 있다고 가정하자
+
+
+`회사` : 의존 당하는 쪽, **자신의 ID를 외래키로 갖고 있는 직원을 참조 하기만 함 (JOIN)**
+
+`직원` : 의존 관계의 주인, **`회사` 의 ID를 외래키로 가지고 있음**
+
+### 회사
+
+```java 
+@Entity
+public class Company {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    // Company는 Employee 엔티티의 company 필드에 의해 관리되므로, mappedBy를 사용합니다.
+    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Employee> employees = new ArrayList<>();
+}
+```
+
+생성되는 Company 테이블
+| 컬럼명 | 데이터 타입    | 제약 조건                       |
+|--------|----------------|---------------------------------|
+| id     | BIGINT         | Primary Key, Auto Increment     |
+| name   | VARCHAR(255)   |                                 |
+
+
+### 직원
+
+```java
+@Entity
+public class Employee {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    // Employee가 의존관계 주인으로, 실제 외래키 (company_id)가 이곳에 생성됩니다.
+    @ManyToOne
+    @JoinColumn(name = "company_id")
+    private Company company;
+}
+
+```
+
+생성되는 Employee 테이블
+| 컬럼명    | 데이터 타입    | 제약 조건                                         |
+|-----------|----------------|----------------------------------------------------|
+| id        | BIGINT         | Primary Key, Auto Increment                        |
+| name      | VARCHAR(255)   |                                                    |
+| company_id| BIGINT         | Foreign Key (references Company(id))               |
+
+### 문제 발생 예시
+
+1. `A Company` 를 조회한다
+2. `A Company` 의 `employees` 에서 `B` 라는 `Employee` 를 제거한다
+3. `A Company` 를 `save` 한다
+
+그 다음
+
+1. `B Employee` 를 조회한다
+2. `B Employee` 의 `company` 를 확인한다
+3. 여전히 `A Company` 다
+
+위와 같이 `Company` 에서 `employees` 를 아무리 수정해도 여전히 `Employee` 의 `company` 는 변화가 없다
+
+처음에 말한 `외래키를 바꿀 권한이 있는 쪽` 이 주인이라는 것이 증명된다
+
+딱 봐도 나중에, `어? 난 분명 바꿨는데 왜 안바뀌지?` 라는 문제가 발생할 수 있을 것 같다.
+
+그러니 일단 `단방향 맵핑` 을 사용하고 필요할 때 `양방향 맵핑`으로 전환하자
+
+## 단방향 맵핑 사용 했을 때
+
+단방향 맵핑에서는 Company만 Employee를 참조하고, Employee 엔티티에는 Company에 대한 참조가 없다
+
+그러나, `@JoinColumn` 어노테이션을 사용하면 실제로는 Employee 테이블에 `외래키(company_id)`가 생성된다
+
+
+### 회사
+
+```java
+@Entity
+public class Company {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    // 단방향 OneToMany: Company에서만 Employee를 참조합니다.
+    // 이 경우 Employee 테이블에 company_id 외래키가 생성됩니다.
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "company_id")
+    private List<Employee> employees = new ArrayList<>();
+```
+
+
+### 직원 
+
+```java
+@Entity
+public class Employee {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    // 단방향 매핑에서는 Company에 대한 참조가 없으므로,
+    // 이 엔티티는 단순히 데이터로만 사용됩니다.
+```
+
+위 코드를 보면 `Company` 에서 `JoinColumn` 를 사용하고 있으니 `Company` 가 의존관계의 주인이다
+
+다시 말해 `외래키를 바꿀 권한이 있다`
+
+이때 양방향 매핑때와 같이 동작해보자
+
+1. `A Company` 를 조회한다
+2. `A Company` 의 `employees` 에서 `B` 라는 `Employee` 를 제거한다
+3. `A Company` 를 `save` 한다
+
+그 다음
+
+1. `B Employee` 를 조회한다
+2. `B Employee` 의 `company` 를 확인한다
+3. `Company` 가 비어있다
+
+의존관계의 주인인 `Company` 에서 바꿨으니 당연한 결과이다
+단방향 맵핑은 누가 주인인지 찾기 참 쉽다
+
+단 단점이 하나 생기는데 `Employee` 만 따로 조회했을 때 `Company` 정보가 없다는 것이다
+
+## 결론
+
+**의존관계 주인은 실제 외래키를 관리하는 쪽이다.**
+
+1. 양방향 매핑에서는
+- `@JoinColumn` 을 사용하고 쪽이 주인이다
+- `@mappedBy` 를 사용하고 있는 쪽이 당하는 쪽이다
+- `@mappedBy` 쪽에서는 아무리 수정해도 외래키가 변경되지 않는다.
+
+2. 단방향 매핑에서는
+- 마찬가지로 `@JoinColumn` 을 사용하고 쪽이 주인이다
+- 당하는 쪽이 없으니 주인 찾기가 쉽다
+- 단점은, 단방향 매핑에서는 `Employee` 만 따로 조회할 때 `Company` 정보가 없어서 소속 정보를 바로 알 수 없다.
