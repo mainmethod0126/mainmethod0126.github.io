@@ -1,0 +1,61 @@
+# 스네이크 케이스를 카멜케이스로 Mapping 시키는 방법
+
+openapi 를 사용하는데, 어떤 key는 스네이크 케이스고, 어떤 값은 카멜 케이스고 섞여있는 경우가 있어서 이를 모두 카멜케이스로 맵핑하는 방법을 찾아보았다
+
+예시를 보자
+
+```java
+// 일부 내용 생략
+var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+if (response.statusCode() == HttpStatus.OK.value()) {
+    return new ObjectMapper()
+            .readValue(response.body(), StepByStepAddressInquiryResponseDto.class);
+```
+
+위와 같이 외부 API를 호출하였는데, response 가 json 이고 내부 키가 카멜 케이스와 스네이크 케이스가 섞여있다
+이를 일반적으로 바로 `ObjectMapper()` 를 사용해서 바로 카멜 케이스 형식으로 만들어진 JAVA POJO 클래스에 맵핑하려고 하면
+실패하게 된다
+
+이를 
+
+```java
+@JsonProperty("y_coor")
+private String yCoor;
+```
+
+와 같이 `@JsonProperty()` 어노테이션을 이용하면 문제 없이 맵핑 가능하다
+아래는 `@JsonProperty()` 가 적용된 전체 DTO 예시이다
+
+```java filename="StepByStepAddressInquiryResponseDto.java"
+@Data
+public class StepByStepAddressInquiryResponseDto {
+
+    private String id;
+    private List<ResultDto> result;
+    private String errMsg;
+    private int errCd;
+    private String trId;
+
+    /**
+     * openapi 규격에 맞추기 위해서 스네이크 케이스로 들어오는 내용을 @JsonProperty 로 맞춰줬습니다
+     */
+    @Data
+    public static class ResultDto {
+        @JsonProperty("y_coor")
+        private String yCoor;
+
+        @JsonProperty("full_addr")
+        private String fullAddr;
+
+        @JsonProperty("x_coor")
+        private String xCoor;
+
+        @JsonProperty("addr_name")
+        private String addrName;
+
+        private String cd;
+    }
+
+}
+```
