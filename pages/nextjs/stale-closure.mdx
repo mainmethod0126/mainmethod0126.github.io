@@ -1,0 +1,55 @@
+# 스테일 클로저(Stale Closure) 문제
+
+
+상태 변수값이 실시간으로 바뀌는게 아니라 뒤늦게 업데이트 되기에 발생하는 문제
+
+
+## 예시
+
+```react
+  const [myname, setMyname] = useState<string>("woosub");
+```
+```react
+  setMyname("wooooooo!!");
+  console.log("myname : " + myname)
+```
+```text
+  myname : woosub
+```
+
+위 예시와 같이 코드를 작성했을 때
+일반적인 상황에서는 `myname : wooooooo!!` 출력을 예상할 수 있으나
+상태변수 myname 는 실시간으로 바뀌는게 아니라 뒤늦게 스케줄러를 통해 변경된다
+이를 항상 주의하여야한다
+
+예상했던 `myname : wooooooo!!` 출력을 원할 경우
+
+### useEffect 훅 사용 
+
+```react
+useEffect(() => {
+  if (myname === "wooooooo!!") {
+    console.log("myname : " + myname);
+  }
+}, [myname]);
+
+setMyname("wooooooo!!");
+```
+
+### 상태 업데이트 콜백 사용
+
+```react
+setMyname((prev) => {
+  const newName = "wooooooo!!";
+  console.log("myname : " + newName);
+  return newName;
+});
+```
+
+### 로컬 변수 사용
+
+```react
+const newName = "wooooooo!!";
+setMyname(newName);
+console.log("myname : " + newName);
+```
