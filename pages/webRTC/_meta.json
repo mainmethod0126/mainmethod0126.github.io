@@ -1,3 +1,5 @@
 {
-  "webrtc-basic-concept": "webRTC 기본 개념"
+  "webrtc-basic-concept": "webRTC 기본 개념",
+  "webrtc-turn-server-usage-firewall-in-outbound-policy-explanation": "webRTC TURN 서버 사용 시 방화벽 인/아웃바운드 정책 설명",
+  "ice-candidate-i-understood": "내가 이해한 ICE Candidate"
 }
