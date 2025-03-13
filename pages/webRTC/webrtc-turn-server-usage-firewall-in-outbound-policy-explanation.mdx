@@ -1,6 +1,21 @@
-# webRTC TURN 서버 사용 시 방화벽 인/아웃바운드 정책 설명
+# webRTC TURN 서버 사용 시 방화벽 UDP 인바운드도 허용해야할까?
 
 ![picture 2](./images/webrtc-turn-server-usage-firewall-in-outbound-policy-explanation-1741854204101.png)  
+
+
+실제로 방화벽(특히 상태 기반 방화벽, Stateful Firewall)에서 이야기하는 ESTABLISHED 상태는 프로토콜 자체의 상태를 나타내는 것이 아니라,
+
+`방화벽의 연결 추적(Connection Tracking)` 기능에서 패킷 흐름을 관리하기 위한 내부적이고 논리적인 상태
+
+즉, 방화벽에서 말하는 "UDP 연결 엔트리의 ESTABLISHED 상태"는 다음을 의미함
+
+- 클라이언트가 최초로 UDP 패킷을 외부로 보내면 방화벽은 이를 NEW 상태로 인지하고 연결 엔트리를 생성함
+- 이후 상대방으로부터 응답 패킷이 도착하면, 방화벽은 이 연결 엔트리를 ESTABLISHED로 바꿈
+- 즉, 실제 프로토콜(UDP)은 연결을 유지하지 않지만, 방화벽이 내부적으로 패킷 흐름을 추적하기 위해 마치 연결된 것처럼 관리하는 것.
+이건 방화벽의 연결 추적(Connection Tracking) 기술에서 나온 논리적 개념일 뿐, 프로토콜 자체의 특성과는 다름
+
+
+이것은 TCP 통신에서 말하는 `연결` 과는 다른 `방화벽의 연결 추적(Connection Tracking)` 에서만 해당되는 내용
 
 ## 결론
 
