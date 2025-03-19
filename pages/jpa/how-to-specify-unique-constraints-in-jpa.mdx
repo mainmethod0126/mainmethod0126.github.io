@@ -1,0 +1,86 @@
+# JPA 고유 제약 조건(Unique Constraint) 지정 방법
+
+JPA에서 데이터 무결성을 보장하기 위한 고유 제약 조건 설정 방법을 알아본다.
+
+## 고유 제약 조건이란?
+
+데이터베이스 테이블에서 특정 컬럼 또는 컬럼 조합이 고유한 값을 가져야 하는 제약 조건이다. 이를 통해 데이터 중복 방지와 무결성을 유지할 수 있다.
+
+## 설정 방법
+
+### 1. @Table과 @UniqueConstraint 사용
+
+```java
+@Entity
+@Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "restaurant_id", "day", "meal_type" })
+})
+public class MealMenu extends BaseEntity {
+    // 필드들...
+}
+```
+
+위 코드는 특정 레스토랑, 날짜, 식사 타입 조합이 중복되지 않도록 설정한다.
+
+예를 들어 
+
+```
+restaurant_id : 1
+day : 2025-03-01
+meal_type : LUNCH
+```
+
+위 값으로 등록된 데이터가 있을때
+해당 필드들의 값이 동일한 별도의 entity 를 저장하려하면 실패하고
+
+```
+meal_type : DINNER
+```
+
+위와 같이 meal_type 만 변경해서 저장하면 성공하게된다
+
+
+### 2. 제약 조건에 이름 지정
+
+```java
+@Table(uniqueConstraints = {
+        @UniqueConstraint(
+            name = "UNIQUE_RESTAURANT_DAY_MEALTYPE",
+            columnNames = { "restaurant_id", "day", "meal_type" }
+        )
+})
+```
+
+제약 조건에 이름을 지정하면 DB 스키마에서 식별이 쉽고, 제약 조건 위반 시 예외 메시지에 이름이 포함된다.
+
+### 3. 단일 컬럼 제약 조건
+
+```java
+@Column(name = "email", unique = true)
+private String email;
+```
+
+단일 컬럼은 `@Column(unique=true)`로 간단히 설정한다. 복합 컬럼은 `@UniqueConstraint`를 사용해야 한다.
+
+## 예외 처리
+
+고유 제약 조건 위반 시 발생하는 주요 예외:
+- `DataIntegrityViolationException`
+- `ConstraintViolationException`
+
+```java
+try {
+    mealMenuRepository.save(mealMenu);
+} catch (DataIntegrityViolationException e) {
+    throw new DuplicateMealMenuException("이미 존재하는 메뉴 조합입니다");
+}
+```
+
+## 정리
+
+JPA에서 고유 제약 조건은 다음과 같이 설정한다:
+
+1. 복합 컬럼: `@Table(uniqueConstraints = { @UniqueConstraint(columnNames = {...}) })`
+2. 단일 컬럼: `@Column(unique = true)`
+
+고유 제약 조건을 활용하면 데이터 일관성을 보장하고 중복 데이터를 효과적으로 방지할 수 있다.
