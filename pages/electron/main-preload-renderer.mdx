@@ -1,35 +1,103 @@
-# 일렉트론의 main 프로세스, renderer 프로세스, preload 스크립트
+# 일렉트론의 Main 프로세스, Renderer 프로세스, Preload 스크립트
 
 ## 프로세스 모델 분리
 
 - 크게 **main 프로세스**와 **renderer 프로세스** 두 가지 유형의 프로세스가 존재
 
-### Main
+### Main 프로세스
 
-- 일렉트론 앱에는 필수적으로 **단일 main 프로세스**가 존재함
-- 모든 Node.js API 를 사용할 수 있음
-- `BrowserWindow` 모듈을 사용해 window 를 만들고 관리하는게 주 목적
-- **BrowserWindow 인스턴스**가 제거되면 해당 renderer 프로세스도 종료된다
-- `app` 모듈을 통해서 어플리케이션의 생명 주기를 제어한다
+#### 시작점
+- package.json에 지정된 JavaScript 파일(예: index.js, main.js)에서 시작된다.
+- 애플리케이션 당 하나만 존재한다.
 
-### Renderer
+#### 시스템 리소스 접근
+- 운영 체제와 직접 상호작용할 수 있다.
+- 파일 시스템, 네트워크 리소스 등에 접근 가능하다.
 
-- `renderer 프로세스`는 웹 컨텐츠를 렌더링하는 역할을 한다
-- 일렉트론 앱은 각 `BrowserWindow`에 대해 **별도의 renderer 프로세스를 생성**
-- 보안 이유로 `Node.js` 를 바로 사용할 수 없다
+#### 애플리케이션 생명주기 관리
+- app 객체를 통해 애플리케이션 시작, 종료, 이벤트 처리 등을 관리한다.
+- 앱의 초기화, 종료 절차를 제어한다.
+
+#### 창 관리
+- BrowserWindow 클래스를 사용하여 창을 생성하고 관리한다.
+- 창의 크기, 위치, 속성 등을 설정한다.
+
+#### 시스템 통합
+- 메뉴, 트레이 아이콘, 글로벌 단축키 등의 시스템 수준 기능을 제공한다.
+- 노티피케이션, 파일 연결 등 OS와의 통합 기능을 담당한다.
+
+#### Node.js 기능 접근
+- 모든 Node.js API를 사용할 수 있다.
+- npm 패키지를 활용할 수 있다.
+
+### Renderer 프로세스
+
+#### 시작점
+- BrowserWindow에 로드된 HTML 파일에서 시작된다.
+- 각 창(BrowserWindow)마다 별도로 존재한다(여러 개 가능).
+
+#### 실행 환경
+- Chromium 브라우저 환경에서 실행된다.
+- 웹 페이지와 동일한 방식으로 작동한다.
+
+#### UI 렌더링
+- 웹 콘텐츠를 렌더링하는 역할을 담당한다.
+- HTML, CSS, JavaScript를 사용하여 UI를 구성한다.
+
+#### 웹 API 사용
+- DOM API, Web API 등 표준 웹 기술을 모두 사용할 수 있다.
+- 웹 브라우저에서 사용 가능한 모든 기능을 활용할 수 있다.
+
+#### 보안 제한
+- 기본적으로 Node.js API에 직접 접근할 수 없다.
+- 시스템 리소스에 대한 접근이 제한되어 있다.
+- contextIsolation을 통해 보안이 강화되어 있다.
+
+#### IPC 통신
+- ipcRenderer 모듈을 통해 메인 프로세스와 통신한다.
+- 필요한 시스템 작업은 메인 프로세스에 요청하는 방식으로 수행한다.
 
 ### Preload 스크립트
 
-- 웹 컨텐츠가 로드되기 전에 렌더러 프로세스에서 실행되는 코드가 포함되어 있다
-- `BrowserWindow 생성자`의 `webPreferences` 옵션을 통해 main 프로세스에 preload 스크립트를 연결할 수 있다
-- `preload 스크립트`는 **전역 window 인터페이스**를 **renderer와 공유**한다
-- `contextIsolation 기본값` 때문에 preload 스크립트에서 window로 변수를 직접 연결할 수 없다
-- `컨텍스트 격리(Context Isolation)`는 preload 스크립트와 일렉트론의 내부 로직이 webContents에 로드된 웹 사이트에 별도의 컨텍스트에서 실행되도록 하는 기능이다
-- 웹 사이트가 일렉트론 내부 또는 preload 스크립트에 접근하지 못하도록 하기 때문에 보안 목적으로 중요하다
-- 컨텍스트 격리를 통해 preload 스크립트 내 권한을 가진 API가 웹 컨텐츠 코드로 유출되지 않도록 한다.
+#### 실행 시점
+- 웹 콘텐츠가 로드되기 전에 실행된다.
+- renderer 프로세스의 초기화 단계에서 동작한다.
 
----
+#### 권한 범위
+- Node.js API에 접근할 수 있다.
+- renderer 프로세스와 window 객체를 공유한다.
+- 안전한 API를 renderer에 노출시키는 다리 역할을 한다.
+
+#### 설정 방법
+- BrowserWindow 생성 시 webPreferences.preload 옵션으로 지정한다.
+- 경로는 절대 경로로 지정해야 한다.
+
+#### 컨텍스트 격리
+- contextIsolation(기본값: true)으로 인해 preload와 renderer의 JavaScript 컨텍스트가 분리된다.
+- 직접 변수를 공유할 수 없고 contextBridge를 통해 안전하게 API를 노출한다.
+
+#### API 노출 방법
+- contextBridge.exposeInMainWorld()를 사용하여 API를 renderer에 노출한다.
+- 특정 기능만 선택적으로 노출시켜 보안을 강화할 수 있다.
+
+#### 보안 측면
+- 웹 콘텐츠가 일렉트론 내부 API에 임의로 접근하는 것을 방지한다.
+- 특권 API가 유출되지 않도록 하여 보안 취약점을 줄인다.
+
+## 세 요소의 관계
+
+Main 프로세스 → (BrowserWindow 생성) → Renderer 프로세스
+                  ↓
+             Preload 스크립트 실행
+                  ↓
+             웹 콘텐츠 로드
+                  ↓
+             IPC를 통한 통신
 
 ## 프로세스 간 통신
 
 - 프로세스 간 통신을 위해 **IPC(Inter-Process Communication)**를 사용한다
+- Main 프로세스에서는 ipcMain을, Renderer 프로세스에서는 ipcRenderer를 사용한다
+- 양방향으로 메시지와 응답을 주고받을 수 있다
+
+이 세 가지 요소는 각각 분리된 역할을 수행하면서, 함께 일렉트론 애플리케이션의 구조를 형성한다. 안전하고 효율적인 일렉트론 앱 개발을 위해서는 이 프로세스 모델을 잘 이해하고 각 요소의 역할에 맞게 코드를 구성하는 것이 중요하다.
