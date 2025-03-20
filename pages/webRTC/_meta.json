@@ -1,5 +1,6 @@
 {
   "webrtc-basic-concept": "webRTC 기본 개념",
   "webrtc-turn-server-usage-firewall-in-outbound-policy-explanation": "webRTC TURN 서버 사용 시 방화벽 UDP 인바운드도 허용해야할까",
-  "ice-candidate-i-understood": "내가 이해한 ICE Candidate"
+  "ice-candidate-i-understood": "내가 이해한 ICE Candidate",
+  "remote-browsing-service-development-and-webrtc-study-1": "원격 브라우징 서비스를 만들면서 WebRTC 공부하기 (1장. 원격 브라우징 서버 만들기)"
 }
