@@ -1,0 +1,130 @@
+# 원격 브라우징 서비스를 만들면서 WebRTC 공부하기 (1장. 원격 브라우징 서버 만들기)
+
+WebRTC를 이용하여 로컬 브라우저가 아닌 원격 브라우저를 사용하는 서비스를 만들면서
+WebRTC에 대한 학습을 진행하고자 합니다.
+
+시작하게 된 계기는 회사에서 이미 원격 브라우저 시스템이 있는데, 별도의 인수인계 없이 유지보수를 진행하라고 지시가 내려왔기에
+간단하지만 비슷한 시스템을 처음부터 직접 만들어보면서 WebRTC에 대한 기본 이해도를 높이고자 합니다.
+
+기술스택
+
+- Electron : 
+- WebRTC : 원격지의 브라우저 화면을 공유할 프로토콜 입니다
+
+---
+
+## 만들어야할 것
+
+### 원격 브라우징 서버
+
+원격지에서 웹 페이지를 렌더링할 용도로 쓰입니다
+
+- Electron : 크로미움을 탑재하고 있어 웹 렌더링이 가능
+
+### 클라이언트
+
+WebRTC를 이용하여 원격 브라우징 서버의 웹 화면을 받아서 보여줄 웹 페이지가 필요하다
+
+- React : 그나마 리액트를 약-간 할 줄 알기 때문에 리액트로 만들 예정
+
+### WebRTC 시그널링 서버 
+
+WebRTC통신을 위해 시그널링을 해줄 서버입니다.
+WebSocket 을 이용할 예정입니다
+
+- Spring + java : 리마인드겸 오랜만에 spring + java 웹 소켓 한번 써보자
+
+---
+
+## 원격 브라우저 서버 만들기
+
+위에서 얘기했던 것 처럼 웹 브라우징을 위해 크로미움이 필요하니 electron 으로 만들 예정이다
+
+## electron 프로젝트 생성
+
+`Electron Forge` 를 사용하여 프로젝트를 생성하자
+
+Electron + React + TS 를 사용할 예정이다
+
+1. 프로젝트 생성 : `npx create-electron-app@latest webrtc-electron-web-browser-peer --template=webpack-typescript`
+
+2. `webrtc-electron-web-browser-peer` 디렉토리로 이동
+
+3. `tsconfig.json` 열람
+
+4. `compilerOptions` 에 `"jsx": "react-jsx"` 추가
+
+5. `npm install --save react react-dom`
+
+6. `npm install --save-dev @types/react @types/react-dom`
+
+```json
+{
+  "compilerOptions": {
+    // ~~
+    "jsx": "react-jsx"
+  },
+  // ~~
+}
+```
+
+7. `index.html` 수정
+
+```html filename="src/index.html"
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>web browser peer</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+```
+
+8. `app.tsx` 생성
+
+html `root` DOM 이 로드된 후에
+React 앱 레더링하기 위해 아래와 같이 코드 작성
+
+```react filename="src/app.tsx"
+import React from "react";
+import { createRoot } from "react-dom/client";
+
+// App 컴포넌트 정의
+const App = () => {
+  return (
+    <div className="app">
+      <h2>Hello from React!</h2>
+    </div>
+  );
+};
+
+// DOM이 로드된 이후에 React 앱 렌더링
+document.addEventListener("DOMContentLoaded", () => {
+  const rootElement = document.getElementById("root");
+  if (rootElement) {
+    const root = createRoot(rootElement);
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+  } else {
+    console.error("Root element not found");
+  }
+});
+
+```
+
+9. `renderer.tsx` 수정
+
+```react filename="src/renderer.ts"
+// Add this to the end of the existing file
+import './app';
+```
+
+10. `npm start` 로 프로세스 정상 실행되는지 확인
+
+##
