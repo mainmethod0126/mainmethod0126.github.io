@@ -44,9 +44,9 @@ istiod-8454df4fbb-7z8xz                 1/1     Running   0          2m
 ## RequestAuthentication 와 AuthorizationPolicy 셋팅하기
 
 
-`RequestAuthentication`: 들어오는 요청의 JWT 토큰을 검증하고, 성공 시 “인증 정보(principal/claims)”를 Istio 내부에 전달
+`RequestAuthentication`: 들어오는 요청의 JWT 토큰을 검증하고, 성공 시 `인증 정보(principal/claims)`를 Istio 내부에 전달, JWT가 없거나, 유효하지 않을 경우 `principal` 을 생성하지 않음
 
-`AuthorizationPolicy`: 검증된 “인증 정보”를 토대로, 요청을 허용(allow)하거나 거부(deny)
+`AuthorizationPolicy`: RequestAuthentication 에서 JWT 검증 후 생성한 `principal`를 토대로, 요청을 허용(allow)하거나 거부(deny)
 
 
 ### RequestAuthentication 란?
@@ -131,7 +131,6 @@ spec:
 - `to.operation` : 요청의 속성(HTTP 메서드, 경로 등)을 정의.
 - `to.methods` : 허용할 HTTP 메서드 (예: GET, POST).
 - `to.paths` : 특정 경로를 필터링.
-
 
 ### 등록 방법
 
