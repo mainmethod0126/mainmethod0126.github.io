@@ -1,0 +1,68 @@
+import { Callout } from "nextra/components";
+
+# 타입스크립트의 문자열 리터럴 타입
+
+일반적인 객체지향 언어들을 보면
+
+`프리미티브 타입` or `클래스 타입` 등으로 타입 지정이 가능한데
+
+타입스크립트에서는 특이하게 `문자열 리터럴 타입` 도 사용할 수 있다
+
+예를 들어보자
+
+```ts
+var tempVar : string = "hello";
+```
+
+```ts
+var tempVar : number = 123;
+```
+
+위와 같이 `tempVar` 변수의 타입을 `string` 또는 `number` 으로 선언하는 것은 자연스럽다
+
+그런데 아래와 같이도 타입을 지정할 수 있다
+
+```ts
+var tempVar : "hello"
+```
+
+`hello` 라는 문자열 리터럴을 타입으로 지정하고 있다, 보통의 문자열은 타입이 아닌 `값`으로 쓰이는데 타입스크립트에서는 `타입`으로도 사용될 수 있다
+
+만약 아래와 같이 `hello` 로 타입이 지정된 변수에 `hi` 라는 값을 넣으려하면, 오류가 발생한다
+
+```ts
+var tempVar : "hello" = "hi"
+```
+
+tempVar 는 이제 오로지 값으로 `hello`만 갖을 수 있게된다
+
+이를 응용해보자
+
+## 응용
+
+```ts filename="lib.dom.d.ts"
+interface WebSocketEventMap {
+    "close": CloseEvent;
+    "error": Event;
+    "message": MessageEvent;
+    "open": Event;
+}
+```
+
+```ts filename="lib.dom.d.ts"
+addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+```
+
+위 코드는 `lib.dom.d.ts` 에 정의된 `interface WebSocket` 의 일부를 가져왔다
+
+제네릭 `K` 의 타입이 `WebSocketEventMap` 의 `key들을 문자열 리터널`으로 가져온 값이다
+
+<Callout type="info" emoji="ℹ">
+keyof 는 객체의 모든 속성 이름(키)를 문자열 리터럴로 추출하는 기능이다
+</Callout>
+
+즉 `K` 는 `"close" | "error" | "message" | "open"` 을 확장한 타입으로 지정된다
+
+그렇다면 파라미터 `type: K` 의 경우 `type : "close" | "error" | "message" | "open"` 로 해석된다
+
+결과적으로 `K`는 문자열 `close`, `error`, `message`, `open` 네개 중 하나만을 타입으로 갖을 수 있다

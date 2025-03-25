@@ -133,6 +133,9 @@ const config: DocsThemeConfig = {
       if (title === "security") {
         return <>📒 {title}</>;
       }
+      if (title === "typescript") {
+        return <>📒 {title}</>;
+      }
       if (title === "nextjs") {
         return <>📒 {title}</>;
       }
