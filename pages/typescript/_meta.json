@@ -1,3 +1,4 @@
 {
-  "string-literal-type": "타입스크립트의 문자열 리터럴 타입"
+  "string-literal-type": "문자열 리터럴 타입",
+  "this-type-definition": "this type 정의"
 }
