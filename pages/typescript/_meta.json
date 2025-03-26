@@ -1,4 +1,5 @@
 {
   "string-literal-type": "문자열 리터럴 타입",
-  "this-type-definition": "this type 정의"
+  "this-type-definition": "this type 정의",
+  "ambient-declaration-declare-var": "앰비언트 선언 - declare var"
 }
