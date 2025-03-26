@@ -23,6 +23,7 @@
   "nginx": "nginx",
   "security": "security",
   "kafka": "kafka",
+  "typescript": "typescript",
   "vue": "vue",
   "nextjs": "nextjs",
   "spring": "spring",
