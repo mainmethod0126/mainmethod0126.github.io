@@ -1,15 +1,15 @@
 # 원격 브라우징 서비스를 만들면서 WebRTC 공부하기 1장 - peer 구현
 
 
-사전에 주의사항
+## 사전에 알아두면 좋을 주의사항
 
-## 연결 방향성
+### 연결 방향성
 
 webRTC 커넥션은 방향성이 존재한다,
 
 만약 `peerA` 와 `peerB` 가 서로 화면을 공유하려면 `a(offer) -> b(answer) 연결` 하나 `b(offer) -> c(answer)` 연결 하나 총 두개의 `webRTC` 연결이 필요하다
 
-## 새로운 전송 데이터가 생길 경우 재협상 필요
+### 새로운 전송 데이터가 생길 경우 재협상 필요
 
 연결 이후에 동영상, 오디오와 같이 새로운 전송 데이터가 생길 경우 `재협상` 이 이뤄져야한다,
 
@@ -17,11 +17,29 @@ webRTC 커넥션은 방향성이 존재한다,
 
 그렇기에 새로운 전송 데이터가 추가되면 `재협상(Offer SDP, Answer SDP 교환)`을 해야함
 
-## Offer SDP, Answer SDP 교환이 끝나도 ICECandiate 교환까지 이뤄지지 않음
+### Offer SDP, Answer SDP 교환이 끝나도 ICECandiate 교환까지 이뤄지지 않음
 
 `RTCPeerConnection` 을 이용할 경우, `Offer SDP, Answer SDP 교환`이 끝나도 `ICECandiate 교환`까지 이뤄지지 않음,
 
 데이터를 보내는 행위 (`data channel 생성` 또는 `addTrack으로 미디어/오디오 추가` 등) 가 발생해야 그 다음 `ICECandiate` 를 진행함
+
+---
+
+## 코드 예시
+
+peer 구현에 대한 내용 포스팅으므로 Signal Server 구현은 포함되지 않음
+별도의 Signal Server 구현 포스팅이 추가될 예정이니 그때 참고 필요
+
+### Offer
+
+```ts
+const config: RTCConfiguration = {
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+};
+const peerConnection = new RTCPeerConnection(config)
+
+
+```
 
 
 
