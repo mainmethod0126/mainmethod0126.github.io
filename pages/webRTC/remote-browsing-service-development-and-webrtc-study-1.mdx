@@ -1,130 +1,29 @@
-# 원격 브라우징 서비스를 만들면서 WebRTC 공부하기 (1장. 원격 브라우징 서버 만들기)
+# 원격 브라우징 서비스를 만들면서 WebRTC 공부하기 1장 - peer 구현
 
-WebRTC를 이용하여 로컬 브라우저가 아닌 원격 브라우저를 사용하는 서비스를 만들면서
-WebRTC에 대한 학습을 진행하고자 합니다.
 
-시작하게 된 계기는 회사에서 이미 원격 브라우저 시스템이 있는데, 별도의 인수인계 없이 유지보수를 진행하라고 지시가 내려왔기에
-간단하지만 비슷한 시스템을 처음부터 직접 만들어보면서 WebRTC에 대한 기본 이해도를 높이고자 합니다.
+사전에 주의사항
 
-기술스택
+## 연결 방향성
 
-- Electron : 
-- WebRTC : 원격지의 브라우저 화면을 공유할 프로토콜 입니다
+webRTC 커넥션은 방향성이 존재한다,
 
----
+만약 `peerA` 와 `peerB` 가 서로 화면을 공유하려면 `a(offer) -> b(answer) 연결` 하나 `b(offer) -> c(answer)` 연결 하나 총 두개의 `webRTC` 연결이 필요하다
 
-## 만들어야할 것
+## 새로운 전송 데이터가 생길 경우 재협상 필요
 
-### 원격 브라우징 서버
+연결 이후에 동영상, 오디오와 같이 새로운 전송 데이터가 생길 경우 `재협상` 이 이뤄져야한다,
 
-원격지에서 웹 페이지를 렌더링할 용도로 쓰입니다
+여기서 재협상이란 `Offer SDP` 를 다시 보내야 함을 말하며, 그 이유는 `SDP` 에 주고 받은 데이터 항목들이 명시되어있기 때문,
 
-- Electron : 크로미움을 탑재하고 있어 웹 렌더링이 가능
+그렇기에 새로운 전송 데이터가 추가되면 `재협상(Offer SDP, Answer SDP 교환)`을 해야함
 
-### 클라이언트
+## Offer SDP, Answer SDP 교환이 끝나도 ICECandiate 교환까지 이뤄지지 않음
 
-WebRTC를 이용하여 원격 브라우징 서버의 웹 화면을 받아서 보여줄 웹 페이지가 필요하다
+`RTCPeerConnection` 을 이용할 경우, `Offer SDP, Answer SDP 교환`이 끝나도 `ICECandiate 교환`까지 이뤄지지 않음,
 
-- React : 그나마 리액트를 약-간 할 줄 알기 때문에 리액트로 만들 예정
+데이터를 보내는 행위 (`data channel 생성` 또는 `addTrack으로 미디어/오디오 추가` 등) 가 발생해야 그 다음 `ICECandiate` 를 진행함
 
-### WebRTC 시그널링 서버 
 
-WebRTC통신을 위해 시그널링을 해줄 서버입니다.
-WebSocket 을 이용할 예정입니다
 
-- Spring + java : 리마인드겸 오랜만에 spring + java 웹 소켓 한번 써보자
 
----
 
-## 원격 브라우저 서버 만들기
-
-위에서 얘기했던 것 처럼 웹 브라우징을 위해 크로미움이 필요하니 electron 으로 만들 예정이다
-
-## electron 프로젝트 생성
-
-`Electron Forge` 를 사용하여 프로젝트를 생성하자
-
-Electron + React + TS 를 사용할 예정이다
-
-1. 프로젝트 생성 : `npx create-electron-app@latest webrtc-electron-web-browser-peer --template=webpack-typescript`
-
-2. `webrtc-electron-web-browser-peer` 디렉토리로 이동
-
-3. `tsconfig.json` 열람
-
-4. `compilerOptions` 에 `"jsx": "react-jsx"` 추가
-
-5. `npm install --save react react-dom`
-
-6. `npm install --save-dev @types/react @types/react-dom`
-
-```json
-{
-  "compilerOptions": {
-    // ~~
-    "jsx": "react-jsx"
-  },
-  // ~~
-}
-```
-
-7. `index.html` 수정
-
-```html filename="src/index.html"
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>web browser peer</title>
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>
-```
-
-8. `app.tsx` 생성
-
-html `root` DOM 이 로드된 후에
-React 앱 레더링하기 위해 아래와 같이 코드 작성
-
-```react filename="src/app.tsx"
-import React from "react";
-import { createRoot } from "react-dom/client";
-
-// App 컴포넌트 정의
-const App = () => {
-  return (
-    <div className="app">
-      <h2>Hello from React!</h2>
-    </div>
-  );
-};
-
-// DOM이 로드된 이후에 React 앱 렌더링
-document.addEventListener("DOMContentLoaded", () => {
-  const rootElement = document.getElementById("root");
-  if (rootElement) {
-    const root = createRoot(rootElement);
-    root.render(
-      <React.StrictMode>
-        <App />
-      </React.StrictMode>
-    );
-  } else {
-    console.error("Root element not found");
-  }
-});
-
-```
-
-9. `renderer.tsx` 수정
-
-```react filename="src/renderer.ts"
-// Add this to the end of the existing file
-import './app';
-```
-
-10. `npm start` 로 프로세스 정상 실행되는지 확인
-
-##
