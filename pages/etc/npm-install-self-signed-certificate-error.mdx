@@ -1,0 +1,17 @@
+# npm install 시 self signed certificate error 무시하기
+
+회사 내부망에서 `npm install` 시도할 경우 간혹 볼 수 있다
+아마 webFilter 등의 방화벽에서 인증서를 갈아끼워서 그럴 가능성이 높다
+
+여기서는 `무시` 하는 방법을 가이드한다
+결코 안전하지 않은 방법이나, 가장 빠르게 해결할 수 있다
+
+`set NODE_TLS_REJECT_UNAUTHORIZED=0`
+
+또는 
+
+`npm config set strict-ssl false`
+
+## 영구적으로 적용 하는 방법 (보안 문제가 발생할 수 있어서 권장하지 않음)
+
+`npm config set strict-ssl false --global`
