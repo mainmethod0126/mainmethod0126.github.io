@@ -81,7 +81,15 @@ navigator.mediaDevices
         console.error("stream error" + error);
     });
 
-// 5. ICE 후보 교환을 위한 이벤트 핸들러 등록
+// 5. 채팅 메세지 전송을 위한 DataChannel 을 생성한 후 가상의 함수 setGlobalDataChannel() 를 이용하여  전역으로 등록한다
+setGlobalDataChannel(peerConnection.createDataChannel("chatting"));
+
+// 6. 데이터 채널 연결되었는지 확인
+dataChannel.onopen = () => {
+    console.log("데이터 채널이 열렸습니다!");
+};
+
+// 7. ICE 후보 교환을 위한 이벤트 핸들러 등록
 // Offer/Answer 교환 후 데이터 통신이 발생할 때 (Data Channel 또는 Track 추가로 인한 Media Stream 통신) 호출 됨
 // (필자는 처음에 peerConnection에 local/remote set이 끝나면 자동 호출인줄 알았으나 그게 아니다, 실제로 데이터를 주고받는 행위가 발생하기 전에 호출된다)
 peerConnection.addEventListener("icecandidate", (event) => {
@@ -96,13 +104,13 @@ peerConnection.addEventListener("icecandidate", (event) => {
     }
 });
 
-// 6. Offer 생성
+// 8. Offer 생성
 const offer = await peerConnection.createOffer();
 
-// 7. peerConnection에 setLocalDescription() 를 이용하여 자신이 생성한 Offer SDP 등록
+// 9. peerConnection에 setLocalDescription() 를 이용하여 자신이 생성한 Offer SDP 등록
 await peerConnection.setLocalDescription(offer);
 
-// 8. signalingChannel 로 Offer SDP 를 전송
+// 10. signalingChannel 로 Offer SDP 를 전송
 signalingChannel?.send({
     type: WebRTCSignalMessageType.OFFER,
     roomId: roomId,
@@ -171,13 +179,24 @@ signalingChannel?.addEventListener("message", async (signalMessage) => {
         });
 
 
-        // 7. Answer 생성
+        // 7. offer와의 dataChannel이 연결되면 이벤트가 호출되는데
+        // 이때 onmessage / onopen 등에 대한 이벤트 핸들러를 등록한다 
+        peerConnection.addEventListener("datachannel", (event) => {
+            const receivedChannel = event.channel;
+            receivedChannel.onopen = () => console.log("데이터 채널 연결됨!");
+            receivedChannel.onmessage = (e) => {
+                console.log("메시지 수신:", e.data);
+                setReceivedChatMessages((prevs) => [...prevs, "수신 : " + e.data]);
+            };
+        });
+
+        // 8. Answer 생성
         const answer = await peerConnection.createAnswer();
 
-        // 8. Answer 를 LocalDescription 로 저장
+        // 9. Answer 를 LocalDescription 로 저장
         await peerConnection.setLocalDescription(answer);
 
-        // 9. Answer Send
+        // 10. Answer Send
         signalingChannel.send({
             type: WebRTCSignalMessageType.ANSWER,
             roomId: roomId,
