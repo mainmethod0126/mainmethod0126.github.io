@@ -6,12 +6,25 @@
 여기서는 `무시` 하는 방법을 가이드한다
 결코 안전하지 않은 방법이나, 가장 빠르게 해결할 수 있다
 
+
+## 일단 npm cache clean
+
+npm cache 가 남아있어서, 아래 조치를 취해도 에러가 발생할 수 있다 일단 캐시를 지운다
+
+`npm cache clean --force`
+
+## 환경변수를 등록하여 인증서 무시하기
+
 `set NODE_TLS_REJECT_UNAUTHORIZED=0`
 
-또는 
 
-`npm config set strict-ssl false`
+자 이제 `npm install` 을 해보면 아래와 같은 경고가 뜨면서 install을 진행하게된다
 
-## 영구적으로 적용 하는 방법 (보안 문제가 발생할 수 있어서 권장하지 않음)
+```bash
+⠇(node:26604) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate 
+verification.
+```
 
-`npm config set strict-ssl false --global`
+
+
+
