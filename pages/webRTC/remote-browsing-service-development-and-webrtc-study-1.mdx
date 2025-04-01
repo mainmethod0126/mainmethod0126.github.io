@@ -1,4 +1,4 @@
-# 원격 브라우징 서비스를 만들면서 WebRTC 공부하기 1장 - peer 구현
+# 화면 공유 서비스로 WebRTC 공부하기 1장 - peer 구현
 
 
 ## 사전에 알아두면 좋을 주의사항
@@ -33,13 +33,167 @@ peer 구현에 대한 내용 포스팅으므로 Signal Server 구현은 포함�
 ### Offer
 
 ```ts
+// 0. signalingChannel 시그널링 서버와의 통신을 위한 객체 생성
+// 내부적으로 webSocket을 이용하며 상세 구현은 스킵
+const signalingChannel = new SignalingChannel();
+
+// 1. config 설정
 const config: RTCConfiguration = {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
+
+// 2. connection 객체 생성
 const peerConnection = new RTCPeerConnection(config)
 
 
+// 3. signalingChannel 에서 받은 message 가 ANSWER 면 peerConnection에 setRemoteDescription() 을 이용하여 응답받은 Answer SDP를 등록하는 이벤트 핸들러 등록
+signalingChannel?.addEventListener("message", async (signalMessage) => {
+    if (signalMessage.type === WebRTCSignalMessageType.ANSWER) {
+    const remoteDesc = new RTCSessionDescription({
+        sdp: signalMessage.sdp,
+        type: "answer",
+    });
+
+    await peerConnection.setRemoteDescription(remoteDesc);
+
+    console.log("received answer : " + signalMessage.type);
+    }
+});
+
+// 4. 화면을 공유하기 위한 Track 추가
+// 꼭 Offer 생성 전에 하는게 좋음, Offer 생성 이후에 하면, 다시 SDP 생성해야함
+// 왜? SDP에는 webRTC로 어떤 데이터들을 주고받을지가 정의되어있는데
+// 거기에 Track 정보도 들어있음
+// 그래서 Offer 생성 후 Track 을 추가하면 미리 생성했던 Offer 에는 추가된 Track 정보가 없음
+// 만약 Offer 생성 후에 Track을 추가해야하는 경우가 발생하면 peerConnection에서 negotiationneeded 이벤트를 감지해서 새로운 Offer를 생성후 Send 해야함
+navigator.mediaDevices
+    .getDisplayMedia({
+        video: true,
+        audio: true,
+    })
+    .then((stream) => {
+        stream.getTracks().forEach((track) => {
+            console.log("stream : " + stream);
+            peerConnection.addTrack(track, stream);
+        });
+    })
+    .catch((error) => {
+        console.error("stream error" + error);
+    });
+
+// 5. ICE 후보 교환을 위한 이벤트 핸들러 등록
+// Offer/Answer 교환 후 데이터 통신이 발생할 때 (Data Channel 또는 Track 추가로 인한 Media Stream 통신) 호출 됨
+// (필자는 처음에 peerConnection에 local/remote set이 끝나면 자동 호출인줄 알았으나 그게 아니다, 실제로 데이터를 주고받는 행위가 발생하기 전에 호출된다)
+peerConnection.addEventListener("icecandidate", (event) => {
+    console.log("on icecandidate");
+
+    if (event.candidate) {
+    signalingChannel?.send({
+        type: WebRTCSignalMessageType.ICECANDIDATE,
+        roomId: roomId,
+        sdp: JSON.stringify(event.candidate.toJSON()),
+    });
+    }
+});
+
+// 6. Offer 생성
+const offer = await peerConnection.createOffer();
+
+// 7. peerConnection에 setLocalDescription() 를 이용하여 자신이 생성한 Offer SDP 등록
+await peerConnection.setLocalDescription(offer);
+
+// 8. signalingChannel 로 Offer SDP 를 전송
+signalingChannel?.send({
+    type: WebRTCSignalMessageType.OFFER,
+    roomId: roomId,
+    sdp: offer.sdp,
+});
+
 ```
+
+### Answer
+
+```ts
+
+const signalingChannel = // 0. Offer 설명쪽에서 생성한 signalingChannel 을 그대로 사용
+
+
+signalingChannel?.addEventListener("message", async (signalMessage) => {
+    
+    // 1. 누군가가 나에게 연결 요청 (Offer SDP)를 보냈음을 감지
+    if (signalMessage.type === WebRTCSignalMessageType.OFFER) {
+
+        // 2. 응답용 peerConnection 을 생성
+        // Offer에서 만든 peerConnection 을 재활용하지 않는 이유는
+        // peerConnection 에는 방향성이 존재함
+        // Offer에서 만든 peerConnection 은 이미 LocalDescription(offer) 가 셋팅되어있음
+        // 그러니 재활용 불가
+        const peerConnection = new RTCPeerConnection(config);
+
+        // 3. peerConnection setRemoteDescription() 를 이용하여 상대방이 보낸 Offer SDP를 저장
+        peerConnection.setRemoteDescription(
+            new RTCSessionDescription({
+            sdp: signalMessage.sdp,
+            type: "offer",
+            })
+        );
+
+        // 4. 상대방의 화면을 띄운 Video 엘리먼트 돔 조회
+        const remoteVideo = document.querySelector(
+            "#remoteVideo"
+        ) as HTMLVideoElement;
+
+        // 5. 상대방이 Track 을 (예 : 화면 공유) 추가하여 협상할 경우 발생할 이벤트 핸들러 등록
+        peerConnection.addEventListener("track", async (event) => {
+            const [remoteStream] = event.streams;
+            if (remoteVideo) {
+                // 6. 위에서 조회한 돔객체의 video Stream을 상대방이 보낸 Stream으로 갈아끼기
+                remoteVideo.srcObject = remoteStream;
+            } else {
+                console.error("Video element #remoteVideo not found");
+            }
+        });
+
+
+        // 6. ICE 후보 교환을 위한 이벤트 핸들러 등록
+        // Offer/Answer 교환 후 데이터 통신이 발생할 때 (Data Channel 또는 Track 추가로 인한 Media Stream 통신) 호출 됨
+        // (필자는 처음에 peerConnection에 local/remote set이 끝나면 자동 호출인줄 알았으나 그게 아니다, 실제로 데이터를 주고받는 행위가 발생하기 전에 호출된다)
+        peerConnection.addEventListener("icecandidate", (event) => {
+            console.log("on icecandidate");
+
+            if (event.candidate) {
+            signalingChannel?.send({
+                type: WebRTCSignalMessageType.ICECANDIDATE,
+                roomId: roomId,
+                sdp: JSON.stringify(event.candidate.toJSON()),
+            });
+            }
+        });
+
+
+        // 7. Answer 생성
+        const answer = await peerConnection.createAnswer();
+
+        // 8. Answer 를 LocalDescription 로 저장
+        await peerConnection.setLocalDescription(answer);
+
+        // 9. Answer Send
+        signalingChannel.send({
+            type: WebRTCSignalMessageType.ANSWER,
+            roomId: roomId,
+            sdp: answer.sdp,
+            to: signalMessage.from,
+        });
+        console.log("sent answer to userId : " + signalMessage.from);
+    }
+});
+
+```
+
+
+
+
+
 
 
 
