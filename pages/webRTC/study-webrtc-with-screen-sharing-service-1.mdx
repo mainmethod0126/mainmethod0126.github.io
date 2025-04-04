@@ -146,7 +146,7 @@ signalingChannel?.addEventListener("message", async (signalMessage) => {
             })
         );
 
-        // 4. 상대방의 화면을 띄운 Video 엘리먼트 돔 조회
+        // 4. 상대방의 화면이 보여질 Video 엘리먼트 돔 선택
         const remoteVideo = document.querySelector(
             "#remoteVideo"
         ) as HTMLVideoElement;
