@@ -1,0 +1,33 @@
+# local에서 문제없던 oauth2 인증이 k8s에 배포된 이후에 인증에 실패하는 현상
+
+local에서 문제 없던 oauth2 인증이 k8s에 배포된 이후에 인증에 실패하는 현상이 발생했다.
+
+
+`구글 로그인 완료` -> `구글 API Console에 지정해놓은 리다이렉트 URL로 리다이렉트` -> `내가 만든 서비스의에서 구글 Token 발급 URL 로 Token 요청` -> `실패`
+
+위와 같이 로그인까지는 완료되나, 구글의 AccessToken 발급 과정에서 실패한다
+
+이에 대한 원인을 짚어보자
+
+## 리다이렉트 URL 불일치 문제?
+
+local에서 테스트시에는 구글 API Console에 지정해놓은 리다이렉트 URL이
+
+`local테스트 시 : http://localhost:8080/login/oauth2/code/google` 
+
+`k8s 에 배포된 이후 : https://auth.bobgo.kr/login/oauth2/code/google`
+
+위와 같이 url의 변경이 존재한다
+
+이 url 쪽으로 사용자가 구글 로그인에 성공하면 발급되는 `인가코드` 가 전달되는데
+
+이 url이 만약 잘못된 url이였을 경우 `내가 만든 서비스의에서 구글 Token 발급 URL 로 Token 요청` 단계를 시도조차 못한다
+
+`https://auth.bobgo.kr/login/oauth2/code/google` 쪽으로 정상적으로 리다이렉트가 되어야 `내가 만든 서비스의에서 구글 Token 발급 URL 로 Token 요청` 단계가 진행되는데,
+
+현재는 이 단계가 정상적으로 진행되는 것을 보니 리다이렉트 url 문제는 아니다
+
+정확한 판단을 위해 고의로 구글 API Console에 지정해놓은 리다이렉트 URL 을 잘못된 url로 변경해서 `구글 Token 발급 요청` 단계가 진행되는지 확인해보자
+
+`테스트를 위한 잘못된 url : https://auth.woogo.kr/login/oauth2/code/google`
+
