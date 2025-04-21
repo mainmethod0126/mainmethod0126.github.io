@@ -1,0 +1,48 @@
+# nextjs를 output: 'standalone', distDir: 'dist' 로 빌드하여 배포했을 때 resource 들을 못찾는 현상
+
+```ts filename="next.config.ts"
+const nextConfig: NextConfig = {
+  distDir: 'dist',
+  output: 'standalone',
+  //etc~~~
+
+  };
+
+export default nextConfig;
+```
+
+위와 같이 `next.config.ts` 가 설정된 상태로 빌드를 하면 빌드 결과물들이 `dist` 디렉토리 하위로 생성되는데
+
+이 `dist` 디렉토리를 
+
+```dockerfile
+FROM node:18-slim
+
+# 작업 디렉토리 설정
+WORKDIR /app
+
+# standalone 모드에서 생성된 파일들 복사
+COPY /dist/standalone ./
+COPY /dist/static ./static
+
+# 설정 파일 복사
+COPY config.js ./
+
+# 포트 설정
+EXPOSE 3000
+
+# 앱 실행
+CMD ["node", "server.js"] 
+```
+
+이렇게 배포하면
+
+브라우저에서 페이지를 요청했을때 js, css 등의 요청에 전부 404 가 발생한다
+
+이를 
+
+```dockerfile
+COPY /dist/static ./dist/static
+```
+
+와 같이 `dist` 하위로 모아줘야한다

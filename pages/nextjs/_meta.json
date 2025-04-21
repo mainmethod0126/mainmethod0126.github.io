@@ -2,5 +2,6 @@
   "commonjs-vs-esmodule": "CommonJs vs ES Module",
   "how-to-inject-config-from-external-config-js-file-in-nextjs-without-rebuild": "재빌드 없이 외부 config.js 파일로 부터 config 주입 받는 방법",
   "how-to-deploy-nextjs-project-with-docker-and-serve-with-nginx": "nextjs프로젝트를 도커로 배포하고 nginx로 서비스하는 방법",
-  "stale-closure": "스테일 클로저(Stale Closure) 문제"
+  "stale-closure": "스테일 클로저(Stale Closure) 문제",
+  "nextjs-output-standalone-distdir-dist-resource-not-found-issue": "nextjs를 output: 'standalone', distDir: 'dist' 로 빌드하여 배포했을 때 resource 들을 못찾는 현상"
 }
