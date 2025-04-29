@@ -1,0 +1,82 @@
+# java httpClient connection pool 초과로 무한 대기 발생하는 문제
+
+java 1.8 버전에서 `httpClient.execute(~)` 를 사용하는데 무한대기에 빠지는 문제가 발생했다
+
+디버깅을 해보니 내부적으로 `PoolingHttpClientConnectionManager.leaseConnection(~)` 함수 호출 후 대기에 빠지더라
+
+나는 `httpClient` 객체를 생성할 때 `HttpClients.creatreDefault()` 함수를 사용하여 생성했는데
+
+이렇게 생성하게되면 **동일한 호스트에 대하여 동시에 열 수 있는 커넥션의 수가 2개**로 지정된다 그리고
+커넥션이 꽉 차있을 때 신규 커넥션을 요청하면 기존 커넥션이 닫힐 때 까지 `무한 대기`한다
+
+그럼 `무한 대기` 가 아닌 `일정 시간`만 대기할 수 있도록 하는 방법을 알아보자
+
+
+## HttpClient 생성 시 커넥션 수, 대기 시간 등 지정 방법
+
+
+아래와 같이 `HttpClients.custom()` 를 사용하면 직접 `RequestConfig` 와 `ConnectionManager` 를 주입할 수 있다
+
+`ConnectionManager.setDefaultMaxPerRoute()` : 동일한 호스트에 대하여 동시에 열 수 있는 커넥션의 수 지정
+`RequestConfigBuilder` : 신규 커넥션을 요청하면 기존 커넥션이 닫힐 때 까지 얼마나 대기할지 지정 가능
+
+```java
+private static CloseableHttpClient createHttpClient() {
+        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+        cm.setDefaultMaxPerRoute(4);
+
+        RequestConfig requestConfig = RequestConfig.custom()
+                        .setConnectionRequestTimeout(10_000) // 10초 대기 후 예외
+                        .build();
+        //CloseableHttpClient httpClient = HttpClients.createDefault() 사용하지 말자
+        CloseableHttpClient httpClient = Objects.requireNonNull(HttpClients.custom()
+                        .setDefaultRequestConfig(requestConfig)
+                        .setConnectionManager(cm)
+                        .build(),
+                        "httpClient is a required value.");
+        return httpClient;
+}
+```
+
+위와 같이 httpClinet 생성 시 옵션들을 지정해줄 수 있다 (애초에 무한 대기가 default인건 설계 자체가 오바인 것 같다..)
+
+## CloseableHttpResponse close하는 방법
+
+`response.close()` 와   
+`EntityUtils.consume(entity), EntityUtils.toString(entity), EntityUtils.toByteArray(entity)` 와 같이 유틸 클래스를 이용하는 방법이 있다
+
+```java
+HttpUriRequest request = requestBuilder.build();
+
+CompletableFuture<CloseableHttpResponse> future = CompletableFuture.supplyAsync(() -> {
+        try {
+                return this.httpClient.execute(request);
+        } catch (IOException e) {
+                throw new IllegalStateException("Failed to execute request" + e.getMessage(), e);
+        }
+});
+
+future.thenApply(response -> {
+        try {
+                // EntityUtils 는 stream으로 값을 가져온 후 안전 해제를 한다
+                return EntityUtils.toByteArray(response.getEntity());
+        } catch (IOException e) {
+                throw new IllegalAccessError();
+        } finally {
+            try {
+                    // 어떤 경우에도 해제되도록 안전 장치를한다
+                    response.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+        }
+});
+```
+
+여기서 만약 `response`를 그냥 방치하고 넘어가면 어느 순간 `무한 대기`등의 문제가 발생할 수 있으니 항상 유의하자
+
+
+
+
+
+

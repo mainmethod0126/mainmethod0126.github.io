@@ -10,5 +10,6 @@
   "generate-javadoc-for-private-modifiers-in-gradle": "gradle에서 javadoc생성시 private 제한자에 대한 문서 생성하기",
   "java-predicate": "자바의 Predicate",
   "lets-try-using-the-grpc-java-library": "grpc-java 라이브러리를 사용해보자",
-  "snake-case-to-camelCase-mapping-method": "스네이크 케이스를 카멜 케이스로 Mapping 시키는 방법"
+  "snake-case-to-camelCase-mapping-method": "스네이크 케이스를 카멜 케이스로 Mapping 시키는 방법",
+  "java-httpclient-connection-pool-exceed-problem": "java httpClient connection pool 초과로 무한 대기 발생하는 문제"
 }
