@@ -47,19 +47,11 @@ Jenkins 자체를 구축하고 셋팅한 인원은 따로 있었기에 이게 �
 
 `curl -X POST -L --user your-user-name:apiToken https://jenkins.example.com/job/your_job/build` 
 
-위와 같은 형식으로 요청할 수 있는데 약간 문서가 불친절한 부분이..
-`your-user-name:apiToken` 를 **base64 인코딩** 을 해야한다는 내용이 설명에는 없고 본문 아래의 `Axios를 사용한 TypeScript 스크립트 예제`의 코드를 직접 봐서 확인해야하는 부분이 있다
+위와 같은 형식으로 요청할 수 있는데
 
-코드의 일부분을 보면
+`curl --user` 옵션을 사용할 경우 내부적으로 `Authorization: Basic <Base64(alice:token)>` 와 같이 `your-user-name:apiToken:apiToken` 를 `Base64인코딩`한 후 `Authorization: Basic` 헤더를 추가해준다
 
-```js
-const credentials = `myusername:myapitoken`;
-// ~~~ 기타 코드 생략
-const base64Credentials = btoa(credentials);
-const authHeader = `Basic ${base64Credentials}`;
-```
-
-위와 같은 코드를 찾을 수 있다
+만약 curl이 아닌 다른 방식을 사용할 경우 base64인코딩 및 `Authorization: Basic` 헤더 추가를 직접 해줘야한다
 
 여기서 사용되는 `apiToken` 은
 
