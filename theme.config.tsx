@@ -154,6 +154,9 @@ const config: DocsThemeConfig = {
       if (title === "kafka") {
         return <>📒 {title}</>;
       }
+      if (title === "jenkins") {
+        return <>📒 {title}</>;
+      }
       if (title === "serialized data structure") {
         return <>📒 {title}</>;
       }

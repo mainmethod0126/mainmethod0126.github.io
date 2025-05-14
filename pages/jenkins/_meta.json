@@ -1,0 +1,3 @@
+{
+  "reason-for-http-error-403-no-valid-crumb-was-included-in-the-request-when-using-remote-jenkins-build": "젠킨스 빌드 원격으로 유발 사용 시 HTTP ERROR 403 No valid crumb was included in the request 가 발생하는 이유"
+}
