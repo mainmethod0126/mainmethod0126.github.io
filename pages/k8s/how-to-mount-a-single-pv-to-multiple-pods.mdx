@@ -1,0 +1,71 @@
+# 두개 이상의 pod가 하나의 pv를 마운트하는 방법
+
+a, b 두개의 pod가 동일한 pvc를 통하여 동일한 pv를 사용하고 싶을 때 순서가
+
+1. pv 만들기
+2. pvc 만들기 (자동으로 만들어 놓은 pv와 pvc 가 바인딩됨 (claim 부합시))
+3. a, b 두개의 pod가 2에서 만든 pvc를 참조(?) 하도록 지정
+4. 완료
+
+비즈니스상의 목적
+static image storage 를 두개의 서비스가 가져다 써야하는 상황
+
+## PV
+
+Persistent Volume으로 AWS의 EBS, NFS, Ceph 등의 스토리지를 k8s로 연결함
+
+생성 책임 : 인프라 관리자
+
+
+## PVC
+
+Persistent Volume Claim 으로 사전에 생성되어있는 Persistent Volume 를 사용하여 서비스 pod에 연결하는 역할
+
+생성 책임 : 서비스 개발자
+
+`pvc.yaml` 로 내가 사용하고자하는 `Persistent Volume` 의 스펙을 정의해놓으면 그에 부합하는 `Persistent Volume` 과 `1:1`로 `바운딩`됨
+
+Claim의 내용은 대략 `용량`, `읽기/쓰기 모드` 등의 정보가 들어감
+
+예를 들어
+
+```yaml
+# pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-pvc        # PVC 이름
+spec:
+  accessModes:
+    - ReadWriteMany       # 여러 Pod에서 읽기/쓰기 가능 모드
+  resources:
+    requests:
+      storage: 10Gi       # 요청 용량
+  storageClassName: manual  # 사용할 PV의 스토리지 클래스
+```
+
+이 PVC를 생성하면, 클러스터에 `storageClassName: manual`, `capacity ≥ 10Gi`, accessModes에 `ReadWriteMany`를 지원하는 PV 중 하나와 `1:1 바인딩`됨
+
+## PV 선택 조건
+
+### accessModes
+
+| accessModes              | 연결 관계  | 읽기/쓰기     |
+|--------------------------|------------|--------------|
+| ReadWriteOnce (RWO)      | 1:1        | 읽기+쓰기     |
+| ReadOnlyMany (ROX)       | 1:n        | 읽기 전용     |
+| ReadWriteMany (RWX)      | 1:n        | 읽기+쓰기     |
+
+
+### storage Class
+
+다이나믹 프로비저닝 (그냥 부합하는 pv가 없을 경우 새로운 pv만들어서 바운드 하는 것) 용으로 사용됨
+
+1. 인프라 관리자가 sotrage class 를 미리 정의해 둠
+2. storageClass를 명시해 pvc를 생성 (storage class name을 사전에 알아야함)
+3. 일치하는 pv가 없을 경우, 명시한 storageClassName과 일치하는 storageClass 를 기반하여 새로운 pv를 생성함
+4. 생성된 pv를 pvc와 바인딩함
+
+
+
+
