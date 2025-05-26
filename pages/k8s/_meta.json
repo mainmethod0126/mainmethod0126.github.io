@@ -2,5 +2,6 @@
   "minikube-used-local-on-premise-test-environment-creation": "minikube 사용한 로컬(온프라미스) 테스트 환경 만들기",
   "how-to-always-pull-without-cache-when-pulling-docker-image-from-registry-pull-policy": "도커 이미지를 registry 에서 pull 했을때의 캐시없이 항상 pull 하는 방법 (pull policy)",
   "port-used-for-communication-between-pods-in-k8s": "k8s pod간의 통신시에 사용되는 port",
-  "reason-for-failed-to-create-fsnotify-watcher-too-many-open-files-error-when-viewing-deployment-logs-in-rancher": "랜처에서 디플로이먼트 로그볼 때 failed to create fsnotify watcher: too many open files 에러가 발생하는 이유"
+  "reason-for-failed-to-create-fsnotify-watcher-too-many-open-files-error-when-viewing-deployment-logs-in-rancher": "랜처에서 디플로이먼트 로그볼 때 failed to create fsnotify watcher: too many open files 에러가 발생하는 이유",
+  "how-to-mount-a-single-pv-to-multiple-pods": "두개 이상의 pod가 하나의 pv를 마운트하는 방법"
 }
