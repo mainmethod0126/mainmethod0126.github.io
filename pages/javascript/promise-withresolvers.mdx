@@ -35,10 +35,12 @@ promise 생성 직후 바로 executor가 실행되며 executor 작업이 끝나�
 ```js filename="Promise.withResolvers"
 // executor 가 생략되어있고, resolve, reject가 밖으로 빠져있다
 // 즉 외부에 resolve, reject를 호출할 수 있다 (외부의 누군가가 promise의 상태 변경 가능)
-const { promise, resolve, reject } = Promise.withResolvers<number>(); 
+const { promise, resolve, reject } = Promise.withResolvers<string>(); 
 
 // resolve, reject 가 여기저기 막 여기저기 돌아댕기다가 10년뒤 어딘지도 모를 곳에서 호출하는 것도 가능
 resolve("10년이 흘렀다...")
+
+// 주의 : resolve 호출 시점은 반드시 한 번은 호출되어야 하고, 호출되지 않으면 해당 Promise는 계속 pending 상태로 남는다
 
 // 그럼 10년뒤에 then 동작
 promise.then(result -> sysout(result)).catch(err -> sysout(err))
