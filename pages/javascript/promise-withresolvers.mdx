@@ -1,0 +1,83 @@
+# Promise.withResolvers 사용법
+
+요약 : resolve를 언제든 원하는 시점에 호출할 수 있다
+
+## 전통적인 Promise 와 차이점
+
+먼저 promise 의 상태 개념을 알아야한다
+
+promise는 세가지 상태를 갖을 수 있으며 한번 변경되면 다시 바꿀 수 없다 즉 상태 변경은 일회성이다
+
+- `pending` : 대기 상태, promise 생성 초기 상태
+- `fulfilled` : 이행 완료 상태, `resolve(값)` 호출로 변경 됨
+- `rejected` : 거부(실패) 상태, `reject(에러값)` 호출로 변경 됨
+
+```js filename="전통적인 promise"
+const promise = new Promise<string>((resolve, reject) => {
+  setTimeout(() => {
+    const result = "완료된 결과";
+    resolve(result);  // 이 시점에 Promise가 fulfilled 상태로 변경
+  }, 1000);
+})
+
+promise.then(result -> sysout(result)).catch(err -> sysout(err))
+```
+
+위와 같이 전통적인 promise 는 
+`resolve, reject`를 인자로 받는 `executor(함수)` 를 생성 인자로 받는데
+promise 생성 직후 바로 executor가 실행되며 executor 작업이 끝나면 promise의 상태가 결정된다
+
+즉, `promise 생성과 동시에 promise의 상태를 결정하는 로직이 바로 돌아가기 시작한다는 것` executor 가 언제 끝날지는 모르지만 어쨌든 상태 변경을 위한 일련의 작업이 즉시 실행되고있다
+결국 promise의 new를 호출하는 사람(?)이 필연적으로 executor를 정의해야한다
+
+이제 차이점을 확인하기 위해 아래 `Promise.withResolvers` 코드를 보자
+
+```js filename="Promise.withResolvers"
+// executor 가 생략되어있고, resolve, reject가 밖으로 빠져있다
+// 즉 외부에 resolve, reject를 호출할 수 있다 (외부의 누군가가 promise의 상태 변경 가능)
+const { promise, resolve, reject } = Promise.withResolvers<number>(); 
+
+// resolve, reject 가 여기저기 막 여기저기 돌아댕기다가 10년뒤 어딘지도 모를 곳에서 호출하는 것도 가능
+resolve("10년이 흘렀다...")
+
+// 그럼 10년뒤에 then 동작
+promise.then(result -> sysout(result)).catch(err -> sysout(err))
+```
+
+전통적인 방식과의 차이점이 확연하게 보인다
+
+`Promise.withResolvers` 는 외부로 `resolve, reject` 를 노출하여, 외부의 누군가가 promise 의 상태를 변경할 수 있게 한다
+
+예시를 하나 들어보면
+
+```js filename="부모 윈도우"
+const { promise, resolve } = Promise.withResolvers<string>();
+
+promise.then(result => {
+    sysout("result : " + result)
+})
+
+const childWindow = window.open(~~~)
+
+childWindow.myPromiseResolve = {
+    resolve
+}
+```
+
+```js filename="자식 윈도우"
+window.myPromiseResolve("자식 윈도우 생성 완료!")
+```
+
+위 예시는 `부모창` 에서 `자식창` 으로 resolve를 넘겨서 자식창에서 resolve를 호출할 수 있도록 하는 예시
+
+
+
+
+
+
+
+
+
+
+
+

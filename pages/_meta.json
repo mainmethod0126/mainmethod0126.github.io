@@ -19,6 +19,7 @@
   "cpp": "c++",
   "elasticsearch": "elasticsearch",
   "java": "java",
+  "javascript": "javascript",
   "rdb": "rdb",
   "nginx": "nginx",
   "security": "security",
