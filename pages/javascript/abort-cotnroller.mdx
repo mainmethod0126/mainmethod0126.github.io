@@ -1,0 +1,88 @@
+# AbortCotnroller를 이용한 Promise 즉시 중단
+
+사실 아직 써보진 않았는데 팀장님이 알려주셔서 나중에 쓸일이 있을 때 리마인드 할 수 있게 짧게만 정리해 놓음
+
+## removeEventListener 대신 사용하기
+
+```js filename="전통적인 방식"
+const button = document.getElementById('myButton');
+
+// 1) 이벤트 핸들러 정의
+function onClickHandler(event) {
+  console.log('버튼이 클릭되었습니다!', event);
+}
+
+// 2) 이벤트 등록
+button.addEventListener('click', onClickHandler);
+
+// 3) 나중에 이벤트 제거
+//    → 동일한 함수 레퍼런스를 넘겨야 제거 가능
+setTimeout(() => {
+  button.removeEventListener('click', onClickHandler);
+  console.log('removeEventListener 호출로 리스너 제거됨');
+}, 5000);
+```
+
+단점 : 제거를 위해서는 **동일한 함수 레퍼런스**를 넘겨야해서 `onClickHandler()` 를 꼭 별도로 정의해야함 `() => {}` 같이 못씀
+
+
+```js filename="AbortController 를 이용한 방식" 
+const button = document.getElementById('myButton');
+
+// 1) AbortController 생성
+const controller = new AbortController();
+
+// 2) signal 옵션을 사용해 이벤트 핸들러 등록
+//    → 이때, 세 번째 인자로 { signal } 객체를 넘겨야 함
+button.addEventListener(
+  'click',
+  event => {
+    console.log('버튼이 클릭되었습니다!', event);
+  },
+  { signal : controller.signal }
+);
+
+// 3) 일정 시간이 지나면 controller.abort()로 일괄 제거
+setTimeout(() => {
+  controller.abort();
+  console.log('AbortController.abort() 호출로 리스너 제거됨');
+}, 5000);
+```
+
+장점 : 제거를 위해서 **동일한 함수 레퍼런스**를 넘길 필요가 없음 코드가 간결해짐
+
+### fetch() 예시
+
+```js filename="fetch 함수 예시"
+// ─── ① AbortController 인스턴스를 생성하고, 변수에 저장 ───
+const controller = new AbortController();
+const signal     = controller.signal;
+
+// ─── ② fetch 호출 시 signal 옵션으로 넘겨 준다 ───
+fetch('/api/data', { signal })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('네트워크 응답 오류');
+    }
+    return response.json();
+  })
+  .then(data => {
+    console.log('서버 응답 데이터:', data);
+  })
+  .catch(err => {
+    // AbortController.abort()에 의해 취소된 경우
+    if (err.name === 'AbortError') {
+      console.log('fetch 요청이 사용자에 의해 취소되었습니다.');
+    } else {
+      console.error('fetch 중 실제 오류 발생:', err);
+    }
+  });
+
+// ─── ③ 특정 시점에 controller.abort() 호출 ───
+// 예: 2초 후에 취소
+setTimeout(() => {
+  controller.abort();
+  console.log('controller.abort() 호출 → 진행 중인 fetch가 취소됩니다.');
+}, 2000);
+
+```

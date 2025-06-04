@@ -1,3 +1,4 @@
 {
-  "promise-withresolvers": "Promise.withResolvers 사용법"
+  "promise-withresolvers": "Promise.withResolvers 사용법",
+  "abort-cotnroller": "AbortCotnroller를 이용한 Promise 즉시 중단"
 }
