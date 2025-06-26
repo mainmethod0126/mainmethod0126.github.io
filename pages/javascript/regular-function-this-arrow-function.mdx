@@ -27,7 +27,7 @@ js의 `this` 를 이해하기 위해서 꼭 이해해야하는 개념이다
 
 **중요한 부분은 js에서 this가 결정되는 시점은 `user.sayName()` 이 호출되는 시점, `user`가 `sayName() 함수를 호출해라` 라는 메세지를 받는 시점에서 결정된다**
 
-**즉, `this = Receiver(수신자)`  다 **
+** 즉, `this = Receiver(수신자)`  다 **
 
 
 <Callout type="info" emoji="ℹ️">
@@ -63,8 +63,8 @@ const instanceOfA = new A();
 instanceOfA.someMethod();
 ```
 
-sayName() 이 `user this` 유지하기 위해서는
-두가지 방법이 있는데
+`user.sayName()` 은 문제가 없으나 리시버가 지정되지 않은 `sayName()` 에서 발생하는 문제를 해결하기 위해서는
+두가지 방법이 있다
 - `bind()` 로 `this를 고정해야한다`
 - `화살표 함수` 를 사용한다
 
