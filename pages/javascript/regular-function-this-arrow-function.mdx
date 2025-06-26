@@ -1,0 +1,115 @@
+import { Callout } from "nextra/components";
+
+
+# 일반 함수의 this, 화살표 함수의 this
+
+js에서 this 개념은 중요한 요소기 때문에 한번 정리하고 넘어가려한다
+
+## Receiver(수신자) 개념
+
+js에서는 `Receiver(수신자)` 개념이 존재하는데
+js의 `this` 를 이해하기 위해서 꼭 이해해야하는 개념이다
+
+`user.sayName()` 여기서 리시버는 `user` 를 말한다
+
+왜 리시버라고 부를까?
+
+`user`는 `sayName() 함수를 호출해라!` 라는 `메세지` 를 수신하는 `수신자` 라는 개념이다
+
+간단히 말해서
+
+- `sayName() 함수를 호출해라` : 메세지
+- `user` : 메세지를 받는 수신자
+
+이 구조라는 것이다
+
+그래서 `user`가 `Receiver` 인 것이다
+
+**중요한 부분은 js에서 this가 결정되는 시점은 `user.sayName()` 이 호출되는 시점, `user`가 `sayName() 함수를 호출해라` 라는 메세지를 받는 시점에서 결정된다**
+
+**즉, `this = Receiver(수신자)`  다 **
+
+
+<Callout type="info" emoji="ℹ️">
+    메세지라는 개념은 js 가 만들어질 당시에 `Smalltalk` 라는 메세지 전달 패러다임의 언어를 참고해서 그렇게 되었다,
+    `Smalltalk` 에서는 객체간에 메세지를 주고받으며 데이터를 처리하는 개념이라고 한다
+    참고 : https://namu.wiki/w/Smalltalk
+</Callout>
+
+## 일반 함수의 this
+
+```ts
+class User {
+    readonly #name = "홍길동"; // Private 필드
+    
+    sayName() {
+        console.log("내 이름은 " + this.#name + " 입니다");
+    }
+}
+
+class A {
+    // A 클래스의 메소드 (예: constructor 또는 다른 메소드)
+    someMethod() {
+        const user = new User();
+        user.sayName(); // Receiver => user, this => user (정상)
+
+        const sayName = user.sayName;
+        sayName(); // Receiver => undefined, this => undefined
+        // A가 this가 되기 위해선 this.sayName() 으로 호출되어야하지만 sayName이 A의 속성이 아니므로 this로 호출이 불가능하다
+    }
+}
+
+const instanceOfA = new A();
+instanceOfA.someMethod();
+```
+
+sayName() 이 `user this` 유지하기 위해서는
+두가지 방법이 있는데
+- `bind()` 로 `this를 고정해야한다`
+- `화살표 함수` 를 사용한다
+
+### bind() 로 this를 고정하는 방법
+
+```ts
+class A {
+    someMethod() {
+        const user = new User();
+        const sayName = user.sayName;
+
+        // 해결: sayName 함수의 this를 user 객체로 고정한 새로운 함수를 만듦
+        const boundSayName = sayName.bind(user);
+
+        // 이제 이 함수는 this가 user로 고정되어 있으므로 정상적으로 동작함
+        boundSayName(); // 출력: "내 이름은 홍길동 입니다"
+    }
+}
+```
+
+### 화살표 함수로 this를 고정하는 방법
+
+```ts
+class User {
+    readonly #name = "홍길동"; // Private 필드
+    
+    // 화살표 함수는 생성되는 시점의 this를 물려받아 영구히 고정한다
+    sayName = () => {
+        console.log("내 이름은 " + this.#name + " 입니다");
+    }
+}
+
+class A {
+    // A 클래스의 메소드 (예: constructor 또는 다른 메소드)
+    someMethod() {
+        const user = new User();
+        user.sayName(); // Receiver => user, this => user (정상)
+
+        const sayName = user.sayName;
+        sayName(); // Receiver => user, this => user
+    }
+}
+```
+
+## 화살표 함수의 this
+
+위에서 언급한 것 처럼 `화살표 함수`는 생성 시점에서 this를 물려 받아서 영구히 고정합니다
+만약 화살표 함수를 bind해서 this를 변경하고자 하면 무시됩니다
