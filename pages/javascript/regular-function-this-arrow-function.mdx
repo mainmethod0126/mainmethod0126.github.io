@@ -5,6 +5,12 @@ import { Callout } from "nextra/components";
 
 js에서 this 개념은 중요한 요소기 때문에 한번 정리하고 넘어가려한다
 
+## 결론 요약
+- `user.sayName()` 여기서 `user`가 `Receiver`
+- 일반 함수의 this 는 `this == Receiver`, `Receiver` 가 없을 경우 `undefined` 또는 `window`가 this
+- 화살표 함수의 this 는 생성 시점에 this를 상속받아 고정됨
+
+
 ## Receiver(수신자) 개념
 
 js에서는 `Receiver(수신자)` 개념이 존재하는데
