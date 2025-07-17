@@ -1,0 +1,42 @@
+# zustand 상태관리에서 localStorage 사용하는 방법
+
+상태 변수 값을 localStorage에 저장하는 방법
+
+```tsx filename="zustandStore.tsx"
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+interface SettingConfigState {
+    useMic: boolean;
+    useCamera: boolean;
+    toggleMic: () => void;
+    toggleCamera: () => void;
+}
+
+const storeKey = "setting-config-store";
+
+export const useSettingConfigStore = create<SettingConfigState>()(
+    persist((set) => ({
+        useMic: true,
+        useCamera: true,
+        toggleMic: () => set((state) => ({ useMic: !state.useMic })),
+        toggleCamera: () => set((state) => ({ useCamera: !state.useCamera })),
+    }), { name: storeKey })
+)
+
+// window의 'storage' 이벤트를 감지하는 리스너
+// A, B, C 세개의 탭이 있을 때 A탭에서 변경한 값이 B탭 에도 반영되게 하기 위한 코드
+// 만약 A에서 값을 바꿨을 때 persist() 로 인하여 localStorage에 저장될거고, 이러면 storage 이벤트가 발생할 텐대 이걸 감지해서 값 갱신
+if (typeof window !== 'undefined') {
+    window.addEventListener('storage', (event) => {
+        // 변경된 localStorage의 키가 우리 스토어의 키와 같은지 확인
+        if (event.key === storeKey) {
+            // 다른 탭에서 변경된 새로운 상태를 파싱
+            const newState = JSON.parse(event.newValue || '{}');
+
+            // 현재 탭의 스토어 상태를 새로운 상태로 강제 업데이트
+            useSettingConfigStore.setState(newState.state);
+        }
+    });
+}
+```
