@@ -40,3 +40,10 @@ if (typeof window !== 'undefined') {
     });
 }
 ```
+
+```tsx filename="store쓰는쪽.tsx"
+const useMic = useSettingConfigStore((state) => state.useMic);
+const useCamera = useSettingConfigStore((state) => state.useCamera);
+
+const { toggleMic, toggleCamera } = useSettingConfigStore();
+```
