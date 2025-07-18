@@ -94,7 +94,7 @@ const config: DocsThemeConfig = {
       if (title === "annotation scanner") {
         return <>🗃 {title}</>;
       }
-      if (title === "bobgo") {
+      if (title === "오늘의 한식뷔페 메뉴가 궁금하다면? 밥고") {
         return <>🗃 {title}</>;
       }
       if (title === "elasticsearch") {
