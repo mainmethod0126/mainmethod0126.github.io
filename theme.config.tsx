@@ -73,7 +73,7 @@ const config: DocsThemeConfig = {
       if (title === "My Profile") {
         return <>🧑🏻‍💻 {title}</>;
       }
-      if (title === "life-beyond-tech") {
+      if (title === "Life Beyond Tech") {
         return <>☕️ {title}</>;
       }
       if (title === "projects") {
@@ -92,6 +92,9 @@ const config: DocsThemeConfig = {
         return <>🗃 {title}</>;
       }
       if (title === "annotation scanner") {
+        return <>🗃 {title}</>;
+      }
+      if (title === "bobgo") {
         return <>🗃 {title}</>;
       }
       if (title === "elasticsearch") {
