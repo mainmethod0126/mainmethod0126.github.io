@@ -1,0 +1,40 @@
+# BroadcastChannel 을 사용하여 브라우저 탭간의 데이터 공유
+
+프론트 개발을 하다보면 켜져있는 브라우저 탭간에 데이터를 공유해야할 경우가 발생한다
+
+그때 `BroadcastChannel` 을 통하여 공유하는 방법을 알아보자
+
+## 예시
+
+`www.woosub.com` 이라는 사이트를 만들었고 `상단 네비게이션 바 (상단바)`가 존재한다고 가정하자
+
+해당 사이트를 접속한 탭 `a`,`b`,`c` 세개가 떠있을 때
+
+하나의 탭에서 `상단바` 를 숨김 처리하면, 나머지 탭에서도 동일하게 상단바를 숨기고 싶다
+
+이때 `BroadcastChannel` 을 이용하여 해결할 수 있다
+
+```ts filename="example.tsx"
+
+interface UiStateMessage {
+    isHidden : boolean
+}
+
+export default function topnav() {
+
+    const [isHidden, setIsHidden] = useState<boolean>(false);
+
+    const channelName = 'ui-state-channel'; // 고유한 채널명 지정
+    const uiStateChannel = new BroadcastChannel(channelName); // 채널 생성
+
+    uiStateChannel.postMessage({ isHidden: isHidden}); // 메세지 전송
+
+    uiStateChannel.onmessage = (event) => { // 메세지 수신
+        const receivedMessage = event.data as UiStateMessage;
+    }
+}
+
+```
+
+
+
