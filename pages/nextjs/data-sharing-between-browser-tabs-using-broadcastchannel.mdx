@@ -27,7 +27,7 @@ export default function topnav() {
     const channelName = 'ui-state-channel'; // 고유한 채널명 지정
     const uiStateChannel = new BroadcastChannel(channelName); // 채널 생성
 
-    uiStateChannel.postMessage({ isHidden: isHidden}); // 메세지 전송
+    uiStateChannel.postMessage({ isHidden: isHidden}); // 채널을 수신하고 있는 모든 탭에 메세지 전송
 
     uiStateChannel.onmessage = (event) => { // 메세지 수신
         const receivedMessage = event.data as UiStateMessage;
