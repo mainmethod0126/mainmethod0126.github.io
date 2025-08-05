@@ -11,6 +11,8 @@ interface SettingConfigState {
     useCamera: boolean;
     toggleMic: () => void;
     toggleCamera: () => void;
+    hasHydrated: boolean;
+    setHasHydrated: (state: boolean) => void;
 }
 
 const storeKey = "setting-config-store";
@@ -19,9 +21,16 @@ export const useSettingConfigStore = create<SettingConfigState>()(
     persist((set) => ({
         useMic: true,
         useCamera: true,
+        hasHydrated: false,
         toggleMic: () => set((state) => ({ useMic: !state.useMic })),
         toggleCamera: () => set((state) => ({ useCamera: !state.useCamera })),
-    }), { name: storeKey })
+        setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
+    }), {
+        name: storeKey,
+        onRehydrateStorage: () => (state) => {
+            state?.setHasHydrated(true);
+        },
+    })
 )
 
 // window의 'storage' 이벤트를 감지하는 리스너
@@ -41,9 +50,34 @@ if (typeof window !== 'undefined') {
 }
 ```
 
+## onRehydrateStorage ?
+
+아직 `영속화된 데이터`를`(localStorage)` 못 불러왔는데
+사전에 렌더링 되버려서 초기 데이터로 렌더링 되었다가, 불러온 이후 값으로 다시 렌더링되어
+사용자가 보는 페이지에 변화가 생기는 문제가 발생할 수 있다
+
+그렇기 때문에, 영속화된 데이터를 모두 불러오고 나서 최초 렌더링 되도록 할 필요가 있는데
+이때 `영속화된 데이터 불러오기가 완료되었다` 라는 시점을 잡을 수 있게 하는 기능이다
+
+- `hasHydrated` : 영속화된 데이터 불러오기가 완료되었는지 확인하는 플래그
+- `onRehydrateStorage` : 영속화된 데이터를 불러오기가 완료된 후 발생하는 이벤트 핸들러
+
+
 ```tsx filename="store쓰는쪽.tsx"
 const useMic = useSettingConfigStore((state) => state.useMic);
 const useCamera = useSettingConfigStore((state) => state.useCamera);
 
-const { toggleMic, toggleCamera } = useSettingConfigStore();
+const { toggleMic, toggleCamera, hasHydrated } = useSettingConfigStore();
+
+// 아직 영속화된 데이터 불러오기가 완료되지 않았을 경우 렌더링 작업은 진행하지 않고 바로 return
+if (!hasHydrated) {
+    return 
+}
+
+// 렌더링을 위한 코드 진행
+return <>
+ /*
+ ~~~
+ */
+</>
 ```
