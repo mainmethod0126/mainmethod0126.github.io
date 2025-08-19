@@ -12,5 +12,6 @@
   "lets-try-using-the-grpc-java-library": "grpc-java 라이브러리를 사용해보자",
   "snake-case-to-camelCase-mapping-method": "스네이크 케이스를 카멜 케이스로 Mapping 시키는 방법",
   "java-httpclient-connection-pool-exceed-problem": "java httpClient connection pool 초과로 무한 대기 발생하는 문제",
-  "stiring-stringbuilder-stringbuffer": "String, StringBuilder, StringBuffer"
+  "stiring-stringbuilder-stringbuffer": "String, StringBuilder, StringBuffer",
+  "relationship-between-bom-bill-of-materials-and-dependency-version-specification-in-gradle": "gradle 에서 BOM(Bill of Materials) 와 의존성 버전명시의 관계"
 }

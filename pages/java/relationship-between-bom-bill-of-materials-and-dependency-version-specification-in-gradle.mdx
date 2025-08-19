@@ -1,0 +1,70 @@
+# gradle 에서 BOM(Bill of Materials) 와 의존성 버전명시의 관계
+
+spring ai 라이브러리를 사용하기 위해서 문서를 보다보니 
+
+```groovy
+dependencies {
+  implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT")
+  // Replace the following with the starter dependencies of specific modules you wish to use
+  implementation 'org.springframework.ai:spring-ai-openai'
+}
+```
+
+위와 같은 의존성 문법을 보게되었다 `platform` 과 `bom` 은 생소하길래 뭔지 찾아보고 정리한다
+
+# BOM(Bill of Materials) 이란
+
+`재료 명세서` 다
+
+확장자는 `.pom` 이며 `메타정보를 들고있는 단순한 파일이다`
+
+위 예시와 같이 `org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT` 에는 
+
+`Spring AI 1.0.0-SNAPSHOT` 을 사용하기 위한 의존관계에있는 `안정적인 타 라이브러리 버전`이 명시되어있다
+
+
+보통의 의존성을 등록할 때
+
+**버전 생략** : `implementation 'org.springframework.ai:spring-ai-starter-model-openai'`
+**버전 명시** : `implementation 'org.springframework.ai:spring-ai-starter-model-openai:1.0.1'`
+
+두 방법이 있는데 이때 `버전 생략` 방식이 가능한 이유가 이 `BOM` 으로 인해서 가능한 것이다
+버전 생략시 `BOM` 에 명시된 버전을 가져오게 된다
+
+**그런데!** 평상시에 우리는 `implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT")` 과 같이 참고할 `BOM` 을 명시하지 않고도
+버전 생략 방식을 잘만 써왔다
+
+이게 가능했던 이유는 
+
+```groovy
+plugins {
+	id 'org.springframework.boot' version '3.5.4'
+}
+```
+
+위와 같이 `gradle plugins` 에 명시된 `org.springframework.boot` 가 내부적으로 `3.5.4` 에 맞는 `BOM` 을 가져오기 때문에
+웬만한 것들은 다 버전 명시 없이 가능했던 것이다
+
+하지만 `Spring AI 1.0.0` 처럼 정말 이제 막 태어난 라이브러리는 plugins에서 자동으로 가져오는 BOM에 포함되어있지 않기 때문에
+
+**가져오는 라이브러리 버전을 명시하던가 또는 BOM을 직접 참조해야한다**
+
+최종적인 방법은 아래와 같다
+
+
+## 벙법 1 : BOM 직접 추가
+
+```groovy
+    implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT")
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai
+```
+
+`platform` 은 `BOM` 참조를 위한 키워드이다
+
+## 방법 2 : 버전 명시
+
+```groovy
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai:1.0.1'
+```
+
+원하는 방법을 사용하면 된다
