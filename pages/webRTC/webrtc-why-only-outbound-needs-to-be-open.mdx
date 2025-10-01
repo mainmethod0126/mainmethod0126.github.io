@@ -1,0 +1,6 @@
+# webRTC 아웃바운드만 열어도 되는 이유
+
+UDP 홀펀칭으로 NAT(+방화벽) 가 `응답` 패킷으로 인식하게 하여, 자연스럽게 통과
+일반적으로 `요청` 패킷이면 차단될텐대 `응답` 패킷이라 가능함
+
+![picture 0](./images/webrtc-why-only-outbound-needs-to-be-open-1759308009122.png)  
