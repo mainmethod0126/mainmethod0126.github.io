@@ -148,6 +148,9 @@ const config: DocsThemeConfig = {
       if (title === "nextjs") {
         return <>📒 {title}</>;
       }
+      if (title === "nodejs") {
+        return <>📒 {title}</>;
+      }
       if (title === "vue") {
         return <>📒 {title}</>;
       }

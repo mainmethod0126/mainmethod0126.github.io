@@ -1,0 +1,46 @@
+# node.js에서 모듈 시스템을 활용한 싱글톤 구현 방법
+
+## 고전적인 싱글톤
+
+- `생성자 private`
+- `getInstance()` 로 생성자 랩핑
+
+## node.js 에서의 싱글톤
+
+- **최초** `require` 또는 `import` 시에 **딱 한번**만 호출되어 캐싱하는 특성 활용
+-  `getInstance()` 구현 불필요
+
+
+### 예시
+
+- 임의의 `new` 호출 방지를 위해 `class GlobalConfig` 는 export 하지 않음
+- `class` 가 export 되지 않았기에 사용측에서 타입 선언이 불가한 문제를 방지하기 위하여 `export type { GlobalConfig };` 로 `타입`을 export함
+- `미리 생성된 객체`를 export 하여 외부에서는 미리 생성된 객체를 사용하도록 함
+
+
+```typescript
+class GlobalConfig {
+    public readonly imagePullSecret: string;
+    public readonly nodeSelector: { [key: string]: string };
+    
+    constructor() {
+        this.imagePullSecret = process.env.IMAGE_PULL_SECRET || "";
+        this.nodeSelector = process.env.NODE_SELECTOR ? JSON.parse(process.env.NODE_SELECTOR) : {};
+    }
+
+    public getKubeConfig(): object {
+        return {
+            nodeSelector: this.nodeSelector,
+        };
+    }
+}
+
+const config = new GlobalConfig();
+
+// 2. 값(value)이 아닌, 타입(type) 정보만 export 합니다.
+export type { GlobalConfig };
+
+// 3. 인스턴스는 default export 합니다.
+export default config;
+```
+

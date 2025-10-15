@@ -29,6 +29,7 @@
   "typescript": "typescript",
   "vue": "vue",
   "nextjs": "nextjs",
+  "nodejs": "nodejs",
   "spring": "spring",
   "jpa": "jpa",
   "serialized-data-structure": "serialized data structure",
