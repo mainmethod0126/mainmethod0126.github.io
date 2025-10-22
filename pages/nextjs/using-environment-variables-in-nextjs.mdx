@@ -1,0 +1,36 @@
+# nextjs에서 환경변수 이용하기
+
+nextjs에서 환경변수를 사용할 때 `NEXT_PUBLIC` 이라는 키워드를 붙이는 방식과 안붙이는 방식으로 나뉜다
+
+## 일단 요약
+
+클라이언트 사이드 렌더링할 페이지에서 환경변수 쓸 때 = `process.env.NEXT_PUBLIC~`
+서버 사이드 렌더링할 페이지에서 환경변수 쓸 때 = `process.env.~`
+
+왜? : 클라이언트 사이드 렌더링 페이지는 번들링 타임에서 `NEXT_PUBLIC` 안붙으면 다 `undefined` 로 치환됨
+
+## NEXT_PUBLIC
+
+**클라이언트 렌더링 페이지**에서 환경변수를 사용할 경우 `NEXT_PUBLIC` 을 붙여야한다
+
+nextjs에서 번들링을 할 때 클라이언트 렌더링 페이지의 경우 `NEXT_PUBLIC` 키워드가 붙어있지 않는 `process.env.~` 의 경우 `undefined` 로 강제 치환된다
+
+```ts
+console.log(process.env.MY_NAME) // 결과 undefined 출력
+
+console.log(process.env.NEXT_PUBLIC_MY_NAME) // 결과 NEXT_PUBLIC_MY_NAME 환경변수의 값 출력
+```
+
+### 주의 사항
+- 클라이언트에게 노출되기에 보안에 주의해야한다(ex : **password 같은 중요값은 NEXT_PUBLIC 을 이용하면 안된다**)
+
+## NEXT_PUBLIC 생략
+
+**서버 사이드 렌더링 페이지**에서 환경변수를 사용할 경우 `NEXT_PUBLIC` 안붙이고 사용하면 된다
+그러면 동적으로 런타임에서 환경변수를 로드할 수 있다
+
+
+
+
+
+
