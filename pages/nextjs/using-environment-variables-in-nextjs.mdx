@@ -5,6 +5,7 @@ nextjs에서 환경변수를 사용할 때 `NEXT_PUBLIC` 이라는 키워드를 
 ## 일단 요약
 
 클라이언트 사이드 렌더링할 페이지에서 환경변수 쓸 때 = `process.env.NEXT_PUBLIC~`
+
 서버 사이드 렌더링할 페이지에서 환경변수 쓸 때 = `process.env.~`
 
 왜? : 클라이언트 사이드 렌더링 페이지는 번들링 타임에서 `NEXT_PUBLIC` 안붙으면 다 `undefined` 로 치환됨
@@ -29,7 +30,8 @@ console.log(process.env.NEXT_PUBLIC_MY_NAME) // 결과 NEXT_PUBLIC_MY_NAME 환�
 **서버 사이드 렌더링 페이지**에서 환경변수를 사용할 경우 `NEXT_PUBLIC` 안붙이고 사용하면 된다
 그러면 동적으로 런타임에서 환경변수를 로드할 수 있다
 
-
+**주의 사항 : 서버 사이드 렌더링일 줄 알고 `NEXT_PUBLIC` 을 생략했는데 useEffect() 등을 사용해서 의도치않게 Client side로 동작할 수 있음
+그렇기 때문에 해당 페이지가 정말로 서버 사이드 렌더링 페이지인지 확실한 검증이 필요함**
 
 
 
