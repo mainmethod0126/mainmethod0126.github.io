@@ -1,0 +1,28 @@
+# spring OncePerRequestFilter 란
+
+## 한번만 실행된다면서 콜스택에 여러번 찍히는 이유는?
+
+java 콜스택은 그 **코드가 정의되어있는 class 를 기준** 으로 찍는다
+
+예를들어 `MyFilter` 가 `OncePerRequestFilter` 를 상속 받았을때
+
+필자는 처음에
+
+`MyFilter.doFilter ~~~`
+`MyFilter.doFilterInternal ~~~`
+
+이렇게 찍힐줄 알았지만
+
+콜스택을 보면
+
+`OncePerRequestFilter.doFilter ~~~`
+`MyFilter.doFilterInternal ~~~`
+
+이렇게 찍힐 수 있다
+
+`MyFilter` 에서 `doFilter` 는 오버라이드 하지 않았고
+`doFilterInternal` 는 추상 함수니 이에 대한 구현은 `MyFilter` 에 존재하기 때문
+
+
+
+
