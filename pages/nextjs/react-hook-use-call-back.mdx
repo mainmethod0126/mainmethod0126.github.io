@@ -1,0 +1,129 @@
+# react hook useCallback 이란
+
+## 이름과 의미
+
+- `use` : react hook 규칙인 접두사
+- `Callback` : 비동기적으로 나중에 호출될 수 있는 함수
+
+즉 `리액트에서 관리하는 Callback 으로 사용하겠다` 라는 말이된다
+
+## JS에서 함수는 객체다
+
+```tsx
+function profile() {
+    const getName = () => {
+        console.log("홍길동")
+    }
+
+    return(
+        // 첫번째와 두번째 렌더링시 getName은 각각 다른 주소이기 때문에 다른 객체로 인식된다
+        // 그러기 때문에 ProfileArea이 다시 렌더링된다
+        <ProfileArea onClick = {getName}>
+        </ProfileArea>
+    )
+}
+```
+
+위와 같은 코드가 두번 렌더링된다고 가정한다
+
+**첫번째 렌더링** 의 `getName` 과 **두번째 렌더링** 의 `getName` 은 주소가 다르다
+결국 이름만 같은 다른 객체라는 말이다
+
+그렇기 때문에 `ProfileArea` 가 다시 렌더링된다
+
+이때 `useCallback`을 이용하면 `리액트에서 관리하는 Callback 으로 사용하겠다` 라고 등록해놓기 때문에
+마치 `Spring의 DI` 처럼 저장해놓은 기존 객체를 재활용 한다 (내부적 동작은 다르지만 사용자 입장에서는 비슷하게 동작함)
+
+## 사용법
+
+```tsx
+function profile() {
+    const getName = useCallback(() => {
+        console.log("홍길동")
+    }, [])
+
+    return(
+        <ProfileArea onClick = {getName}>
+        </ProfileArea>
+    )
+}
+```
+
+`useCallback` 을 사용한다 하더라도 결국 **함수 객체는 한번 생성되어야한다** 위와 같이 `useCallback` 의 두번째 인자에 `[]` 를 넣어서
+profile 첫번째 렌더링시에 생성해서 저장할 수 있다
+
+## 활용 : 무한 렌더링 방지
+
+
+아래는 무한 렌더링이 발생하는 코드
+
+```tsx
+import React, { useState, useEffect } from 'react';
+
+const InfiniteLoopExample = () => {
+  const [count, setCount] = useState(0);
+
+  // [문제의 원인]
+  // 컴포넌트가 렌더링 될 때마다 fetchData 함수는 '새로운 참조값'을 가진 새 함수로 다시 생성됩니다.
+  // 마치: const fetchData = new Function(...) 과 같습니다.
+  const fetchData = () => {
+    console.log('데이터 가져오는 중...');
+    // 상태를 업데이트하면 -> 리렌더링이 발생합니다.
+    setCount((prev) => prev + 1);
+  };
+
+  useEffect(() => {
+    fetchData();
+    
+    // [무한 루프의 트리거]
+    // fetchData가 의존성 배열에 있습니다.
+    // React는 렌더링 후 "fetchData가 변했나?"를 검사합니다.
+    // 아까 위에서 새로 만들어졌으므로 "변했다!"고 판단하고 useEffect를 다시 실행합니다.
+  }, [fetchData]); 
+
+  return (
+    <div>
+      <h1>무한 렌더링 카운트: {count}</h1>
+      <p>콘솔을 확인해보세요. 멈추지 않고 올라갑니다.</p>
+    </div>
+  );
+};
+
+export default InfiniteLoopExample;
+```
+
+무한 렌더링 해결한 코드
+
+```tsx
+import React, { useState, useEffect, useCallback } from 'react';
+
+const FixedExample = () => {
+  const [count, setCount] = useState(0);
+
+  // [해결책]
+  // 의존성 배열이 [] (빈 배열)이므로, 
+  // 이 함수는 컴포넌트가 처음 마운트 될 때 딱 한 번만 생성되고,
+  // 이후 리렌더링 되어도 계속 같은 메모리 주소를 유지합니다.
+  const fetchData = useCallback(() => {
+    console.log('데이터 가져오는 중...');
+    setCount((prev) => prev + 1);
+  }, []); // 의존성 없음
+
+  useEffect(() => {
+    fetchData();
+    
+    // 이제 React는 리렌더링 후 비교할 때
+    // "이전 fetchData와 지금 fetchData의 주소가 같네?" 라고 판단합니다.
+    // 따라서 useEffect를 다시 실행하지 않습니다.
+  }, [fetchData]); 
+
+  return (
+    <div>
+      <h1>안전한 카운트: {count}</h1>
+      <p>콘솔을 확인해보세요. 한 번만 실행됩니다.</p>
+    </div>
+  );
+};
+
+export default FixedExample;
+```
