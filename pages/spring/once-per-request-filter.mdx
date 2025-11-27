@@ -16,10 +16,10 @@
 3. 요청 처리중에 exception 발생
 4. 서블릿 컨테이너까지 에러가 전파됨
 5. 서블릿이 에러 감지
-6. /error 페이지로 포워딩 시작
+6. `/error` 페이지로 포워딩 시작
 7. 다시 필터체인
-8. /error 페이지 도착
-9. error 페이지 또는 error json(기본 등록된 BasicErrorController가 처리 ) 반환
+8. `/error` 페이지 도착
+9. error 페이지 또는 error json(기본 등록된 `BasicErrorController`가 처리 ) 반환
 
 자 위 단계를 보면 필터체인이 앞쪽에 한번 뒷쪽에 한번 **총 두번** 들어간다
 
