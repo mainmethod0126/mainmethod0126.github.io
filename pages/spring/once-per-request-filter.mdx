@@ -39,15 +39,15 @@ java 콜스택은 그 **코드가 정의되어있는 class 를 기준** 으로 �
 
 필자는 처음에
 
-`MyFilter.doFilter ~~~`
-`MyFilter.doFilterInternal ~~~`
+1. `MyFilter.doFilter ~~~`
+2. `MyFilter.doFilterInternal ~~~`
 
 이렇게 찍힐줄 알았지만
 
 콜스택을 보면
 
-`OncePerRequestFilter.doFilter ~~~`
-`MyFilter.doFilterInternal ~~~`
+1. `OncePerRequestFilter.doFilter ~~~`
+2. `MyFilter.doFilterInternal ~~~`
 
 이렇게 찍힌다
 
