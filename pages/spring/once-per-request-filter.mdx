@@ -1,5 +1,28 @@
 # spring OncePerRequestFilter 란
 
+## 하나의 요청에 한번의 호출을 보장하는 Filter
+
+`doFilter` 에서 호출된적 있는지 판별하는 `flag` 가 들어가있다
+일반적으로 `OncePerRequestFilter` 를 상속받고 `doFilterInternal` 를 구현해서 사용한다
+
+`앞단 Filter -> MyFilter.doFilter -> MyFilter.doFilterInternal` 이렇게 동작한다
+
+## 왜 한번만 호출되어야하나?
+
+요청이 왔고 요청 처리중 exception이 발생했다고 치면
+
+`요청 -> 필터체인 -> 요청 처리중에 exception 발생 -> 서블릿 컨테이너까지 에러가 전파됨 -> 서블릿이 에러 감지 -> /error 페이지로 포워딩 시작 -> 다시 필터체인 -> /error 페이지 도착 -> error 페이지 또는 error json(기본 등록된 BasicErrorController가 처리 ) 반환`
+
+자 위 단계를 보면 필터체인이 앞쪽에 한번 뒷쪽에 한번 **총 두번** 들어간다
+
+그렇다면 한번의 요청에 동일 필터가 두번 동작할 수 있다는 것인데
+
+예를들어 요청 한번에 요청 Log 를 남기는 `RequestLoggingFilter` 가 있다고 치자
+
+요청이 한번 발생했는데 `RequestLoggingFilter` 가 두번 동작하면 불필요한 로그가 추가로 남게된다
+
+이럴때 `OncePerRequestFilter` 를 상속받고 `doFilterInternal` 를 구현하면 두번 호출되지 않는다
+
 ## 한번만 실행된다면서 콜스택에 여러번 찍히는 이유는?
 
 java 콜스택은 그 **코드가 정의되어있는 class 를 기준** 으로 찍는다
@@ -18,10 +41,11 @@ java 콜스택은 그 **코드가 정의되어있는 class 를 기준** 으로 �
 `OncePerRequestFilter.doFilter ~~~`
 `MyFilter.doFilterInternal ~~~`
 
-이렇게 찍힐 수 있다
+이렇게 찍힌다
 
 `MyFilter` 에서 `doFilter` 는 오버라이드 하지 않았고
-`doFilterInternal` 는 추상 함수니 이에 대한 구현은 `MyFilter` 에 존재하기 때문
+`doFilterInternal` 는 추상 함수니 이에 대한 구현은 `MyFilter` 에 존재하기 때문에
+`doFilter` 호출부는 `OncePerRequestFilter.doFilter ~~~` 와 같이 찍히는게 맞다
 
 
 
