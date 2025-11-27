@@ -11,7 +11,15 @@
 
 요청이 왔고 요청 처리중 exception이 발생했다고 치면
 
-`요청 -> 필터체인 -> 요청 처리중에 exception 발생 -> 서블릿 컨테이너까지 에러가 전파됨 -> 서블릿이 에러 감지 -> /error 페이지로 포워딩 시작 -> 다시 필터체인 -> /error 페이지 도착 -> error 페이지 또는 error json(기본 등록된 BasicErrorController가 처리 ) 반환`
+1. 요청
+2. 필터체인
+3. 요청 처리중에 exception 발생
+4. 서블릿 컨테이너까지 에러가 전파됨
+5. 서블릿이 에러 감지
+6. /error 페이지로 포워딩 시작
+7. 다시 필터체인
+8. /error 페이지 도착
+9. error 페이지 또는 error json(기본 등록된 BasicErrorController가 처리 ) 반환
 
 자 위 단계를 보면 필터체인이 앞쪽에 한번 뒷쪽에 한번 **총 두번** 들어간다
 
