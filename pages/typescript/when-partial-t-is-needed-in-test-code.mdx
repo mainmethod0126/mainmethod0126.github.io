@@ -1,0 +1,27 @@
+# TypeScript test 코드에서 partial 가 필요한 경우
+
+
+## partial
+
+제네릭으로 넘겨받은 타입 `T`의 모든 속성을 선택적(Optional, ?)으로 만드는 역할을 함
+
+`partial<MyUser>` 이렇게 하면 MyUser의 모든 속성이 Optional로 바뀜
+
+## test 코드에서 필요한 이유
+
+보통 `MyUser` 과 같은 클래스는 많은 메서드와 속성을 가지고 있음
+
+분명 필수 속성들도 많을텐대, 단위 테스트에서는 필요한 속성만 있으면 되는데 불필요하게 쓰지도 않는 속성들을 죄다 주입해줘야함
+
+이때 `partial<T>` 를 사용하면 모든 속성이 Optional로 바뀌면서 원하는 속성만 사용하는게 가능함
+
+아래 코드와 같이 사용할 수 있다
+
+```ts
+const sayName = jest.fn<MyUser['sayName']>().mockRejectedValue(new Error('should not be called'));
+
+const stubMyUser: Partial<MyUser> = {
+    sayName
+};
+```
+

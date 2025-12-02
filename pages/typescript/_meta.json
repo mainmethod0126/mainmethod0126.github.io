@@ -1,5 +1,6 @@
 {
   "string-literal-type": "문자열 리터럴 타입",
   "this-type-definition": "this type 정의",
-  "ambient-declaration-declare-var": "앰비언트 선언 - declare var"
+  "ambient-declaration-declare-var": "앰비언트 선언 - declare var",
+  "when-partial-t-is-needed-in-test-code.mdx": "TypeScript test 코드에서 partial 가 필요한 경우"
 }
