@@ -1,5 +1,6 @@
 {
   "how-to-implement-singleton-in-nodejs": "node.js에서 모듈 시스템을 활용한 싱글톤 구현 방법",
   "pure-esm-and-dual-package": "왜 내 코드는 터질까? Pure ESM 지뢰와 Dual Package의 이해",
-  "jest-test-failure-due-to-esm-only-library": "ESM 으로만 빌드된 라이브러리로 인하여 jest 테스트 실패하는 현상"
+  "jest-test-failure-due-to-esm-only-library": "ESM 으로만 빌드된 라이브러리로 인하여 jest 테스트 실패하는 현상",
+  "reason-for-jest-undefined-reading-spawn-error": "jest에서 undefined (reading 'spawn') 에러가 발생하는 이유"
 }
