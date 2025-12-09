@@ -11,13 +11,13 @@ import { Callout } from 'nextra/components'
 
 1. **입력(Source Code)** : 개발자는 ESM 문법(`import/export`)으로 코드 작성
 2. **변환(Compile)** : `tsc(컴파일러)`가 실행되면서 `tsconfig.json` 설정을 확인. 예시 `"module": "commonjs"`
-3. **출력(Dist Code)** : `tsc(컴파일러)` 는 `node.js` 좋아하는 cjs(commonjs)문법으로 싹 바꿔서 `dist/` 등의 출력 폴더에 `.js` 파일로 저장
+3. **출력(Dist Code)** : `tsc(컴파일러)` 는 `node.js`가 좋아하는 cjs(commonjs)문법으로 싹 바꿔서 `dist/` 등의 출력 폴더에 `.js` 파일로 저장
 4. **실행(Runtime)** : `node.js`는 `package.json`의 `"type": "commonjs"` 설정을 보고, 변환된 `require` 코드를 문제없이 실행함
 
-- `tsconfig.json` 의 `"module"` 은 compile 결과를 위한 것
-- `package.json` 의 `"type"` 은 이미 컴파일된 `.js`를 `commonjs` 형식으로 읽을 것
+- **copile** : `tsconfig.json -> "module"`
+- **runtime** : `package.json -> "type"`
 
-<Callout type="error" emoji="❗❗❗">
+<Callout type="error" emoji="❗">
     `esm` 으로 컴파일된 `.js` 를 `package.json` 의 `type`을 `commonjs` 로 해서 읽으면 에러 발생
 
     에러 발생하는 예시
