@@ -1,0 +1,124 @@
+# ESM 으로만 빌드된 라이브러리로 인하여 jest 테스트 실패하는 현상
+
+`jest` 를 이용하여 테스트 코드를 만들었는데
+
+실행하면 
+
+```js
+import { flattenedDecrypt } from '../flattened/decrypt.js';
+
+    ^^^^^^
+```
+
+위와 같은 에러가 발생한다
+
+이는 해당 라이브러리가 cjs/esm 둘다 지원하는 Dual Package 방식으로 배포된게 아니라 **오직 esm으로만** 배포되었기 때문이다
+
+`jest` 는 기본적으로 `cjs`형식으로 해석하는데, 라이브러리가 `esm` 만 지원하도록 되어있어서 발생한다
+
+## 해결 방법
+
+`jest` 가 해당 라이브러리를 `cjs`형식으로 변환하고, 그 다음 읽게 해야한다
+
+방법은 `jest.config.cjs` 에 `transformIgnorePatterns` 과 `transform` 을 지정하는 것이다
+
+기본적으로 jest는 모든 파일을 **변환 무시** 하는데, `transformIgnorePatterns` 을 사용하면 패턴에 일치하는 것은 빼고 무시하라 라는 설정이 가능하다
+
+```js
+  transformIgnorePatterns: [
+    // node_modules 하위의 kubernetes, openid-client, oauth4webapi, jose 들은 변환 무시에서 예외 즉, 변환을 해라! 라는 옵션
+    "node_modules/(?!(@kubernetes|openid-client|oauth4webapi|jose))"
+  ]
+```
+
+만약 본인 프로젝트 코드들이 `ts`일 경우 `preset: 'ts-jest'` 를 써야할 텐대 그러면 `transformIgnorePatterns` 설정만으로는 부족하다
+
+<Callout type="info" emoji="ts-jest란?">
+ts-jest의 역할은 **"메모리 상에서 즉시 변환(On-the-fly Transpilation)"**입니다.
+
+**테스트 시작**: 사용자가 **npm test**를 입력합니다.
+
+**파일 만남**: Jest가 **app.test.ts** 파일을 읽으려고 합니다.
+
+**통역 요청**: **설정(preset: 'ts-jest')**을 보고, Jest가 ts-jest에게 파일을 넘깁니다. **"야, 이거 TS라는데 네가 좀 해석해줘."**
+
+**변환**: **ts-jest**는 **tsc(TypeScript Compiler)**의 기능을 빌려, 그 자리에서 TS 코드를 JS 코드로 바꿉니다. (이때 파일로 저장하지 않고 메모리에서만 처리합니다.)
+
+**실행**: Jest는 변환된 JS 코드를 받아 실행합니다.
+</Callout>
+
+
+`preset: 'ts-jest'` 의 경우  기본적으로 `.ts` 파일만 해당하기 때문에
+
+이미 컴파일되어서 배포된 `node_modules`에 있는 `.js` 파일들은 해당되지 않는다
+
+그렇기 때문에 `transform` 를 추가로 설정해줘야한다
+
+```js
+transform: {
+'^.+\\.[tj]sx?$': [
+    'ts-jest',
+    {
+    tsconfig: './tsconfig.jest.json',
+    useESM: false,
+    },
+],
+}
+```
+
+위와 같이 설정하면 `.js` 도 `ts-jest`를 사용하게된다
+
+- `^.+\\.[tj]sx?$`
+`[tj]`: "첫 글자는 `t` 또는 `j`여야 한다."
+`s`: "그 다음 글자는 무조건 `s`여야 한다."
+`x?`: "마지막 `x`는 있어도 되고 없어도 된다(Optional)." (`?`의 역할)
+
+- `tsconfig: './tsconfig.jest.json'`
+`./tsconfig.jest.json` 파일을 참고해라
+> 왜 `./tsconfig.json` 안쓰고 따로 쓰나?
+> 대상 파일 차이: 메인 `tsconfig.json`은 보통 `include: ["src/**/*"]`로 되어 있어 tests 폴더를 무시할 수 있습니다.
+> 반면, 테스트용 설정은 `include: ["src/**/*", "tests/**/*"]` 처럼 테스트 파일도 포함해야 합니다.
+
+- `useESM: false`
+`CommonJS` 을 써라~!
+
+**정리하면, 정규식에 걸리는 파일들은 변환할 때 `./tsconfig.jest.json` 참고하고, `commonjs`로 변환해라**
+
+최종적으로 아래와 같이 된다
+
+```js
+/** @type {import('ts-jest').JestConfigWithTsJest} */
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  testMatch: ['**/tests/**/*.test.ts'],
+  clearMocks: true,
+
+  // [1. 트랜스파일러 설정]
+  transform: {
+    '^.+\\.[tj]sx?$': [
+      'ts-jest',
+      {
+        tsconfig: './tsconfig.jest.json',
+        useESM: false,
+      },
+    ],
+  },
+
+  // [2. 문지기 명단 업데이트]
+  transformIgnorePatterns: [
+    "node_modules/(?!(@kubernetes|openid-client|oauth4webapi|jose))"
+  ],
+};
+```
+
+
+
+
+
+
+
+
+
+
+
