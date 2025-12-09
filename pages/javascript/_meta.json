@@ -1,5 +1,6 @@
 {
   "promise-withresolvers": "Promise.withResolvers 사용법",
   "abort-cotnroller": "AbortCotnroller를 이용한 Promise 즉시 중단",
-  "regular-function-this-arrow-function": "일반 함수의 this, 화살표 함수의 this"
+  "regular-function-this-arrow-function": "일반 함수의 this, 화살표 함수의 this",
+  "commonjs-vs-esmodule": "CommonJs vs ES Module"
 }

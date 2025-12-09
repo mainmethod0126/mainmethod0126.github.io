@@ -1,0 +1,69 @@
+
+import { Callout } from 'nextra/components'
+
+# 왜 내 코드는 터질까? Pure ESM 지뢰와 Dual Package의 이해
+
+라이브러리 가져다 쓰다보면 `ERR_REQUIRE_ESM` 에러를 접하는 경우가 많다
+
+왜 발생하는지 알아보자
+
+## TypeScript 컴파일 및 실행 흐름과정
+
+1. **입력(Source Code)** : 개발자는 ESM 문법(`import/export`)으로 코드 작성
+2. **변환(Compile)** : `tsc(컴파일러)`가 실행되면서 `tsconfig.json` 설정을 확인. 예시 `"module": "commonjs"`
+3. **출력(Dist Code)** : `tsc(컴파일러)` 는 `node.js` 좋아하는 cjs(commonjs)문법으로 싹 바꿔서 `dist/` 등의 출력 폴더에 `.js` 파일로 저장
+4. **실행(Runtime)** : `node.js`는 `package.json`의 `"type": "commonjs"` 설정을 보고, 변환된 `require` 코드를 문제없이 실행함
+
+- `tsconfig.json` 의 `"module"` 은 compile 결과를 위한 것
+- `package.json` 의 `"type"` 은 이미 컴파일된 `.js`를 `commonjs` 형식으로 읽을 것
+
+<Callout type="error" emoji="❗❗❗">
+    `esm` 으로 컴파일된 `.js` 를 `package.json` 의 `type`을 `commonjs` 로 해서 읽으면 에러 발생
+
+    에러 발생하는 예시
+    `package.json: "type": "commonjs"`
+    `tsconfig.json: "module": "esnext"`
+</Callout>
+
+## 아니 그러면 node_module에있는 .js는 esm과 cjs가 섞여있을텐대?
+
+### Pure ESM 라이브러리는 실제로 문제가 발생함(사실상 지뢰임)
+
+일부 라이브러리들이 `"우리는 더 이상 cjs 지원 안해. 오로지 esm만 사용할거야"` 하고 배포를 해놓으면
+
+문제가 터짐
+
+1. 사용자 프로젝트`package.json -> type: commonjs` 에서 `import PureESMLib from pure-esm-lib` 라는 esm 문법을 씀
+2. `tsconfig.json -> module: commonjs` 로 되어있을 경우 tsc는 문제없이 컴파일함 (결과물 : `const PureESMLib = require('pure-esm-lib')`)
+3. `node.js` 가 실행하다가 `PureESMLib` 를 `require` 로 불러오려고 시도함
+4. `ERR_REQUIRE_ESM` 에러 발생!
+
+### 해결방법
+
+**애초에 라이브러리가 `Dual Package` 방식으로 배포되어야함**
+
+**Dual Package(이중 패키지) 란 : 사용자가 CJS를 쓰든 ESM을 쓰든 알아서 맞춰주도록하는 방식**
+
+`Dual Package`을 한 라이브러리는 `package.json` 이 아래와 같음
+```json filename="package.json"
+/**
+사용자의 프로젝트가 CJS(require) 방식이면 Node.js가 자동으로 "require" 필드에 적힌 파일을 가져옴.
+따라서 사용자는 라이브러리가 어떻게 생겼는지 몰라도 됨
+*/
+{
+  "name": "super-library",
+  "main": "./dist/index.cjs.js",  // CJS 사용자가 오면 이리로 안내
+  "module": "./dist/index.esm.js", // ESM 사용자가 오면 이리로 안내
+  "exports": {                     // Node.js 최신 버전용 표지판
+    "require": "./dist/index.cjs.js",
+    "import": "./dist/index.esm.js"
+  }
+}
+```
+
+### 3줄 요약
+- **내 코드의 운명**: 나는 최신 ESM(import) 문법으로 개발하지만, 결국 **tsc**가 **CJS(require)**로 번역(Transpile)해서 Node.js가 실행한다. (일반적인 백엔드 설정)
+
+- **지뢰의 정체(Pure ESM)**: 번역된 내 코드는 require('라이브러리')를 호출하는데, 해당 라이브러리가 **"난 오직 ESM만 지원해!"**라고 선언한 경우 ERR_REQUIRE_ESM 에러가 발생한다.
+
+- **해결사(Dual Package)**: 이를 방지하기 위해 라이브러리는 exports 설정을 통해 사용자가 require로 부르든 import로 부르든 알아서 **맞는 파일(.cjs/.mjs)로 안내(Routing)**해줘야 한다.
