@@ -1,0 +1,93 @@
+# coturn 을 운영환경에서 쓸 때 log 관리를 위한 설정
+
+
+## 목적
+
+- syslog가 아닌 별도의 파일에 log 적재
+- 일정 기간이 지난 로그는 자동 삭제 `(예시 : 7일)`
+
+---
+
+## /var/log/turn 디렉토리 생성
+
+1. `/var/log/` 경로에 `turn` 이름의 디렉토리를 생성
+2. `chown turnserver:turnserver turn` 명령어로 디렉토리를 `turnserver` 유저가 사용할 수 있게 변경
+
+---
+
+## turn server config 변경
+
+### 로깅 수준 변경
+
+1. `/etc/turnserver.conf` 편집기로 열람
+2. 내용 쭉~ 내리다보면 `#verbose` 라고 한줄 존재하는게 보일 것 (**주의 사항 : `v`가 소문자인 `verbose`임, 대문자도 있으니 구분 잘해야함**)
+3. `#`을 삭제하여 주석 해제
+4. 그 아래에 `Verbose` 라고 대문자`V`로 시작하는게 있을텐대 이거는 `#`을 추가해서 주석 처리
+
+- `verbose` : 일반적인 디버깅
+- `Verbose`(`V` 대문자) : 패킷 단위 정밀 분석 **(운영 환경에서는 비활성을 권장함)**
+
+### 표준 출력 금지
+
+1. `/etc/turnserver.conf` 편집기로 열람
+2. 내용 쭉~ 내리다보면 `#no-stdout-log` 라고 한줄 존재하는게 보일 것
+3. 여기서 `#` 을 지워서 주석 해제
+
+- `no-stdout-log` : 이게 주석처리 되어있으면  `log-file` 옵션과는 별개로 표준출력도 병행되어 `syslog`와 `log-file` 둘다 로그가 쌓임
+  
+### log 저장 경로 변경
+
+1. `/etc/turnserver.conf` 편집기로 열람
+2. 내용 쭉~ 내리다보면 `syslog` 라고 한줄 존재하는게 보일 것
+3. `syslog` 라는 텍스트를 `log-file=/var/log/turn/turn.log` 와 같이 변경
+4. 아래줄에 `#simple-log` 텍스트가 존재함
+5. `#simple-log` 의 앞의 `#`을 지워서 주석 해제
+
+- `log-file` : log 를 지정 경로에 저장
+- `simple-log` : log 파일 이름에 PID가 붙지 않도록 함, 이로인하여 `logrotate` 등에서 패턴으로 지정하는게 편해짐
+
+**`로깅 수준 변경`, `표준 출력 금지`, `log 저장 경로 변경` 작업 완료 후 저장**
+
+---
+
+## 리눅스 logrotate 를 사용하여 log 관리 주기 설정
+
+1. `/etc/logrotate.d` 경로에 `turn` 이라는 파일 생성
+2. 편집기로 `turn` 파일 열람
+3. 아래와 같은 로그 정책 내용 입력 후 저장
+
+```bash
+/var/log/turn/turn.log {
+    daily
+    rotate 7
+    missingok
+    compress
+    delaycompress
+    notifempty
+    create 640 turnserver turnserver
+    postrotate
+        /usr/bin/pkill -HUP turnserver > /dev/null 2>&1 || true
+    endscript
+}
+```
+
+- `daily` = 저장 주기: 매일 (weekly, monthly 가능)
+- `rotate 7` = 보관 개수: 7개 (7일 지난 로그는 삭제됨)
+- `missingok` = 파일이 없어도 에러 무시
+- `compress` = 지난 로그 압축 (gzip, 저장 주기를 daily로 했으면 2일차 log부터 압축됨)
+- `delaycompress` = 압축을 다음 주기까지 지연 (파일 쓰기 충돌 방지)
+- `notifempty` = 로그 내용이 없으면 로테이션 안 함
+- `create 640 turnserver turnserver` = 새 파일 생성 권한 및 소유자 지정
+- `/usr/bin/pkill -HUP turnserver > /dev/null 2>&1 || true` = Coturn에게 로그 파일을 다시 열라는 신호(SIGHUP) 전송
+
+---
+
+## 변경된 설정 적용을 위한 서비스 재실행
+
+1. `sudo systemctl restart coturn` 명령어로 turn 서비스 재실행
+
+---
+
+## 로그 정상 저장 여부 확인
+
+1. `/var/log/turn/turn.log` 경로에 파일이 생성되었고 `tail -f` 등의 명령어로 확인했을때 log가 적재되고 있는지 확인
