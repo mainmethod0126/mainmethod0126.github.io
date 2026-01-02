@@ -1,0 +1,23 @@
+# helm 을 이용하여 nginx ingress 간단하게 설치하기
+
+## helm 명령어
+
+```bash
+helm install my-nginx-ingress-sample ingress-nginx/ingress-nginx \
+  --namespace my-nginx-ingress-sample \
+  --create-namespace \
+  --set controller.ingressClassResource.name=my-nginx-ingress-sample \
+  --set controller.ingressClassResource.controllerValue="k8s.io/my-nginx-ingress-sample" \
+  --set controller.ingressClass=my-nginx-ingress-sample \
+  --set controller.ingressClassResource.default=false
+```
+
+- `Release Name`: my-nginx-ingress-sample (Helm이 관리하는 이름)
+
+- `Namespace`: my-nginx-ingress-sample (설치될 공간)
+
+- `IngressClass Resource Name`: my-nginx-ingress-sample (K8s 리소스 이름)
+
+- `Controller Value`: k8s.io/my-nginx-ingress-sample (컨트롤러 식별자)
+
+- `Ingress Class ID`: my-nginx-ingress-sample (내부 프로세스 ID)
