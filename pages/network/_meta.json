@@ -1,3 +1,4 @@
 {
-  "p2p-udp-hole-punching": "p2p에서 udp 홀 펀칭(hole punching)"
+  "p2p-udp-hole-punching": "p2p에서 udp 홀 펀칭(hole punching)",
+  "half-open-and-keepalive": "half open 과 keep alive"
 }
