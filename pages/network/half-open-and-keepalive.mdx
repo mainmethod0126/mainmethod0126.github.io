@@ -57,6 +57,13 @@ OS 기본
 - 재부팅 된 서버는 **너가 보낸 패킷에 해당하는 프로세스가 없어 난 몰라** `RST(Reset)` 응답 
 - `RST` 응답 받은 나는 **상대방이 나를 기억 못 하는구나(Half-Open).** 소켓 닫음
 
+<Callout type="info" emoji="ℹ️">
+실제 경험담
+- k8s 환경에서 redis 사용중
+- redis pod 강제 종료됨
+- keepAlive 설정 안했을때는 강제 종료되었던 redis pod가 올라왔는데도 half open 유지
+- keepAliv 설정했을때는 강제 종료되었던 redis pod가 올라오는 순간 `RST 응답`이 와서 half open 종료
+</Callout>
 
 ### 상황 : 상대방이 아예 사라졌을 때 (No Response - 가장 흔한 Half-Open)
 
