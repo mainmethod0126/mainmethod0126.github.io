@@ -1,85 +1,226 @@
+
 import { Callout } from "nextra/components";
 
+# CORS 란 (그리고 우리가 흔히 하는 오해 바로잡기)
 
-# CORS 란
+웹 개발을 하다 보면 가장 많이 마주치는 에러 중 하나가 CORS입니다. CORS가 무엇인지, 내부적으로 어떻게(How) 작동하는지, 그리고 어떤 문제를 해결하기 위해 도입되었는지 심도 있게 살펴보겠습니다.
 
-CORS 정말 간단하게 살펴보자
+## 1. 보안 위협 시나리오: CORS가 막아주는 것과 아닌 것
 
-![picture 0](./images/what-is-cors-1735518361031.png)  
+먼저 우리가 웹 보안을 생각할 때 흔히 떠올리는 해킹 시나리오를 하나 가정해 보겠습니다.
 
+사용자가 `은행` 사이트(`bank.com`)에 접속해서 로그인을 유지한 채로 웹 서핑을 하고 있습니다.
+이때 공격자가 만든 `악성 웹사이트`(`copy.bank.com`)에 무심코 접속하게 되었습니다. 공격자는 이 웹사이트 내부에 눈에 보이지 않는 스크립트를 숨겨두어, 사용자의 브라우저가 강제로 `은행 송금 API`를 호출하도록 만듭니다.
 
-사용자가 `은행` 사이트에 접속해서 온라인 뱅킹을 하고있다고 가정하자
+이 시나리오에서 발생하는 문제는 크게 두 가지 영역으로 나뉩니다.
 
-이때 `공격자(해커)` 가 은행 웹 사이트를 제공하는 서버에 취약점을 발견하여 자신이 만든 `악성 웹사이트` 접속 URL을 은행 사이트 어딘가에 숨겨놓았다.
+1. **데이터 탈취 (CORS의 방어 영역):** 악성 사이트가 은행 서버로 API를 호출한 뒤, 서버가 돌려준 응답 데이터(내 계좌 잔액, 개인정보 등)를 읽어 들여 해커의 서버로 빼돌리는 행위.
+2. **상태 변경 (CSRF의 방어 영역):** 악성 사이트가 은행 서버로 '해커 통장으로 100만 원 송금'이라는 POST 요청을 보내어, 서버의 상태 자체를 변경해 버리는 행위 (Cross-Site Request Forgery).
 
-```
-은행 도메인 : bank.com
-악성 웹 사이트 도메인 : copy.bank.com
-```
+**가장 중요한 팩트:** 브라우저의 CORS(Cross-Origin Resource Sharing) 정책은 1번(데이터 탈취)을 막기 위해 존재합니다. 2번(상태 변경) 공격 자체를 CORS가 완벽히 막아주지는 못합니다. 
 
-이 `악섭 웹 사이트` 접속할 경우 브라우저 스토리지에 저장된 `인증 정보` 를 찾아서 이를 통해 `은행 송금 API`를 호출하여 공격자의 통장으로 입금되도록 해놓는다
+## 2. 네이밍과 어원: 왜 CORS라고 부를까?
 
-이렇게되면 사용자가 은행 웹 사이트를 이용하다가 자신도 모르는 사이에 공격자의 통장으로 송금을 해버리는 문제가 발생한다
+* **SOP (Same-Origin Policy, 동일 출처 정책):** 원칙적으로 브라우저는 다른 도메인(출처) 간의 리소스 상호작용을 꽉 막아버리는 정책을 기본으로 사용합니다. 악의적인 스크립트가 내 데이터를 훔쳐가는 것을 막기 위함입니다.
+* **CORS (Cross-Origin Resource Sharing, 교차 출처 리소스 공유):** 하지만 현대 웹에서는 외부 API, 폰트, 이미지 등 다른 도메인의 리소스를 반드시 가져와야 합니다. 그래서 서버가 "이 도메인은 안전하니까 내 리소스를 공유(Sharing)해 줘도 돼!"라고 브라우저에게 허락해 주는 예외 규칙을 만들었는데, 이것이 바로 CORS입니다.
 
-`브라우저(chrome, edge, sarfari 등)` 는 이를 방지하기 위해 서버 Service 가 보내주는 `Access-Control-Allow-Origin` 라는 값에 허용되는 도메인이 아닐 경우 `Request` 자체를 차단시켜버린다
+## 3. 내부 메커니즘: 브라우저는 어떻게 요청을 차단하는가?
 
-서버가 보내는 `Access-Control-Allow-Origin` 의 예시는 보통 아래와 같다
+"브라우저는 출처가 다르면 Request 자체를 차단시켜버린다"는 것은 흔히 알려진 **명백한 오개념**입니다. 브라우저의 동작 방식은 요청의 형태에 따라 두 가지로 나뉩니다.
 
-```
-Access-Control-Allow-Origin : * : 클라이언트의 도메인이 무엇이든 허용하겠다
-Access-Control-Allow-Origin : back.com : 클라이언트의 도메인이 bank.com 일 때만 허용하겠다
-```
+### A. Simple Request (단순 요청)과 치명적인 사이드 이펙트
 
-차단 자체는 브라우저에서 하는 거기 때문에 브라우저에서 정책을 꺼버리면 그냥 `Request`를 그대로 진행해버린다.
+`GET` 메서드이거나, HTML `<form>` 태그처럼 `Content-Type`이 `application/x-www-form-urlencoded`인 기본적인 `POST` 요청은 **Preflight(사전 요청) 없이 브라우저가 서버로 본 요청을 즉시 전송해 버립니다.**
 
-이때 브라우저는 서버로 보내는 요청에 자동으로 `Origin` 이라는 헤더를 추가하는데 예시는 아래와 같다
-
-```
-정상적인 은행 웹 사이트에서 Request를 보낼 때
-Origin : bank.com
-
-악성 웹 사이트에서 Request를 보낼 때
-Origin : copy.bank.com
-```
-
-브라우저는 Request에 붙어있는 `Origin` 값과 서버가 보내준 `Access-Control-Allow-Origin` 을 비교하여 일치하는 값이 있을 경우에만 `Request`를 허용한다
+**내부 작동 프로세스:**
+1. 악성 웹 사이트(`copy.bank.com`)에서 송금 `POST` API를 호출합니다.
+2. 브라우저는 `Origin: copy.bank.com` 헤더를 붙여 서버로 **실제 Request를 보냅니다.**
+3. 서버는 요청을 받아 100만 원 송금 로직을 실행합니다. **(사이드 이펙트 발생: 서버 상태 변경됨)**
+4. 서버가 응답을 반환할 때 `Access-Control-Allow-Origin` 헤더를 내려줍니다.
+5. 브라우저가 서버의 응답을 확인해 보니, 허용된 도메인이 아닙니다.
+6. **이때 브라우저는 응답(Response) 데이터를 JavaScript가 읽지 못하도록 차단하고 CORS 에러를 띄웁니다.**
 
 <Callout type="warning" emoji="❔">
-"Access-Control-Allow-Origin 를 받았다는 건 이미 서버에서 응답을 보낸거 아니냐? 이미 Request를 보냈는데 그 이후에 차단하는게 무슨 의미냐"
+"그러면 서버에서 이미 송금 처리가 끝났는데, 브라우저가 나중에 응답을 차단하는 게 무슨 의미인가요?"
 </Callout>
 
-정확하다, 애초에 Request가 가야 `Access-Control-Allow-Origin` 를 받을 수 있는데, 그러면 이미 Request를 보내버린 시점이라 그 이후 차단은 무의미하다.
+정확한 지적입니다. 단순 요청(Simple Request)의 경우, 서버의 데이터는 이미 변경되었지만 클라이언트만 응답을 받지 못해 에러가 나는 **"유령 요청(Phantom Request)" 사이드 이펙트**가 발생합니다. CORS는 데이터를 읽는 것만 막을 뿐, 단순 요청이 서버에 도달하는 것 자체를 막지는 않기 때문입니다. 이를 막기 위해서는 아래에 설명할 Preflight 방식이나 모던한 보안 대책(SameSite 쿠키 등)이 필수적입니다.
 
-그렇기 때문에 브라우저는 실제 Request가 발생하기 전, 서버로 부터 `Access-Control-Allow-Origin` 을 확인하기 위한 `Request를 하나 더 보낸다` 이를 `Preflight 요청` 이라고 한다
+### B. Preflight 요청 (사전 요청)
 
-## Preflight 요청
+위와 같은 단순 요청의 사이드 이펙트를 막고, 서버의 데이터베이스가 함부로 변경되는 것을 보호하기 위해 브라우저는 `Preflight(사전 확인)`라는 메커니즘을 사용합니다. 항공기가 이륙하기 전 기체를 점검하는 'Preflight check'에서 따온 이름입니다.
 
-`Preflight Request`의 경우 일반적으로 `OPTIONS` Method를 사용하게 된다
+현대 웹 개발에서 가장 많이 사용하는 `Content-Type: application/json` 형태의 데이터 전송이나, 헤더에 `Authorization` 토큰을 담는 복잡한 요청의 경우 브라우저는 반드시 Preflight를 먼저 보냅니다.
 
-1. Client 코드에서 `송금API Request` 를 시도한다
-2. 브라우저가 먼저 `송금API Request Url` 쪽에 `OPTIONS` Method를 이용하여 `Origin` 을 포함한 `Preflight Request` 를 보낸다
-3. 서버는 이에 응답으로 `Access-Control-Allow-Origin` 를 반환한다
-4. `Origin` 과 `Access-Control-Allow-Origin` 를 비교하여 허용된 `Origin` 일 때 `송금API Request` 를 보낸다
+<Callout type="info" emoji="✅">
+**모든 요청에 항상 Preflight를 보내는 것은 아닙니다!**
+JSON 데이터를 담기 위해 `Content-Type`을 `application/json`으로 변경하거나, 클라이언트에서 커스텀 헤더를 추가하는 등 특정 조건을 만족하는 'Preflighted Request'일 때만 보냅니다.
+</Callout>
 
-Preflight Request 예시
+**내부 작동 프로세스:**
+1. Client 코드에서 JSON 데이터를 담은 `송금 API Request`를 시도합니다.
+2. 브라우저는 실제 요청을 잠시 보류하고, 서버가 이 요청을 받을 준비가 되었는지 묻기 위해 `OPTIONS` 메서드를 사용하여 `Preflight Request`를 보냅니다.
+3. 서버는 서버에 설정된 CORS 정책을 확인한 후 `Access-Control-Allow-Origin` 등의 허용 헤더를 반환합니다.
+4. 브라우저가 응답 헤더를 검사하여 허용된 출처(Origin)임이 확인되면, 그제서야 보류해 두었던 **실제 본 요청(POST)** 을 서버로 날립니다.
+5. 허용되지 않은 출처라면 본 요청은 아예 서버로 날아가지 않고 즉시 차단됩니다.
 
-```
+**Preflight Request 예시:**
+
+```http
 OPTIONS /api/remittance HTTP/1.1
 Host: bank.com
-Origin: https://bank.com
+Origin: [https://copy.bank.com](https://copy.bank.com)
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: content-type
+
 ```
+
+## 4. 모던 프로그래밍의 보안 해결책
+
+서버에서 CORS 정책을 설정할 때 `Access-Control-Allow-Origin: *` (와일드카드)를 주면 모든 도메인을 허용할 수 있습니다. 하지만 이는 사용자 인증 정보(Cookie 등)를 받을 수 없게 되는 치명적인 사이드 이펙트를 낳습니다. 로그인이 필요한 서비스라면 반드시 허용할 특정 도메인을 명시해야 합니다.
+
+나아가, 앞서 언급한 상태 변경(CSRF) 공격을 방어하기 위해 현대 웹에서는 다음과 같은 서버/브라우저 레벨의 방어 로직을 필수적으로 적용합니다.
+
+### 4.1. SameSite 쿠키 속성 적용 (가장 중요)
+
+과거에는 로그인에 성공하면 서버가 클라이언트 브라우저에 세션 쿠키를 발급했고, 브라우저는 요청의 출처를 따지지 않고 무조건 이 쿠키를 서버로 같이 보냈습니다. 바로 이 점을 악용하여 외부 악성 사이트(`copy.bank.com`)에서 본래 은행 서버(`bank.com`)로 쿠키를 함께 담아 요청을 보내는 것이 CSRF 공격입니다.
+
+이 문제를 근본적으로 해결하기 위해 도입된 쿠키 속성이 바로 **SameSite**입니다.
+"요청이 출발한 사이트와 목적지 사이트가 같은(Same) 사이트(Site)일 때만 쿠키를 전송하겠다"는 의미로 지어졌습니다.
+
+<Callout type="info" emoji="💡">
+**Same-Origin과 Same-Site의 차이점**
+`Origin(출처)`은 프로토콜, 포트, 서브도메인까지 모두 완벽히 일치해야 합니다. (예: `https://api.bank.com`과 `https://www.bank.com`은 다른 출처입니다.)
+하지만 `Site`는 최상위 도메인(eTLD+1)만 봅니다. 즉, 위의 두 주소는 Same-Site로 간주되어 쿠키가 정상적으로 공유됩니다.
+</Callout>
+
+**SameSite의 3가지 속성값과 내부 메커니즘:**
+
+1. **`Strict` (가장 엄격함):**
+* **동작 방식:** 브라우저 주소창의 도메인과 요청을 보내는 도메인이 100% 동일할 때만 브라우저가 쿠키를 붙여서 서버로 보냅니다.
+* **사이드 이펙트:** 외부 이메일이나 카카오톡 링크를 클릭해서 내 웹사이트로 들어오는(GET 이동) 경우에도 쿠키를 차단해버립니다. 사용자는 분명 로그인을 해두었는데 링크를 타고 들어오면 로그아웃된 것처럼 보이는 심각한 UX 저하가 발생합니다.
+
+
+2. **`Lax` (모던 브라우저의 기본값):**
+* **동작 방식:** `Strict`의 UX 문제를 해결하기 위해 나온 타협점입니다. 링크 클릭 같은 안전한 `GET` 이동에서는 쿠키 전송을 예외적으로 허용합니다. 하지만 악성 스크립트가 백그라운드에서 보내는 `POST`, `PUT`, `DELETE` 요청이나 `AJAX (fetch)` 요청에는 쿠키를 절대 보내지 않습니다.
+* 크롬 등 모던 브라우저들은 이제 쿠키 발급 시 옵션을 생략하면 자동으로 `Lax`를 부여하여 CSRF를 방어합니다.
+
+
+3. **`None` (완전 허용):**
+* **동작 방식:** 과거의 기본값입니다. Cross-Site 요청이든 뭐든 항상 쿠키를 보냅니다. 프론트엔드와 백엔드 도메인이 완전히 다를 때(예: `app.com`에서 `api.io`로 통신) 불가피하게 사용해야 합니다.
+* **사이드 이펙트 고려:** 브라우저는 보안상 `SameSite=None`을 설정할 경우 **반드시 `Secure` 속성을 함께 설정할 것을 강제**합니다. 즉, HTTPS 통신이 아니면 브라우저가 아예 쿠키 발급 자체를 거부해버립니다.
+
+
+
+**모던 백엔드 발급 코드 예시 (Node.js / Express):**
+
+```javascript
+app.post('/api/login', (req, res) => {
+  // 1. 아이디/비밀번호 검증 로직 통과 후
+  const sessionToken = "generated_secure_token";
+
+  // 2. 모던한 방식의 안전한 쿠키 발급
+  res.cookie('session_id', sessionToken, {
+    httpOnly: true,  // JavaScript(document.cookie)에서 탈취 불가능하게 차단
+    secure: process.env.NODE_ENV === 'production', // 실서버(HTTPS)에서는 true
+    sameSite: 'Lax', // CSRF 완벽 방어: 외부 사이트의 POST 요청 시 브라우저가 쿠키를 차단
+    maxAge: 1000 * 60 * 60 * 24 // 1일 유지
+  });
+
+  res.status(200).json({ message: "로그인 성공" });
+});
+
+```
+
+위와 같이 발급하면 공격자가 악성 사이트에서 강제로 송금 `POST` 요청을 보내더라도, 브라우저가 `Lax` 정책에 의해 `session_id` 쿠키를 제외하고 빈껍데기 요청만 서버로 보냅니다. 서버는 "인증되지 않은 사용자"로 판단하여 요청을 무사히 거부하게 됩니다.
+
+### 4.3. Fetch Metadata (`Sec-Fetch-Site`) 검사
+
+`SameSite` 쿠키가 클라이언트(브라우저)에서 자체적으로 쿠키를 보내지 않도록 차단하는 메커니즘이라면, 서버 측에서도 악의적인 요청을 실행 전에 쳐내기 위한 모던한 아키텍처가 필요합니다. 이를 위해 W3C에서 도입한 표준이 Fetch Metadata입니다.
+
+**네이밍의 어원과 의미:**
+
+* **`Sec-` (Security):** 이 접두사가 붙은 헤더는 오직 브라우저 내부 엔진만이 설정할 수 있습니다. 악의적인 해커가 JavaScript(`fetch`나 `axios`)를 통해 헤더 값을 임의로 변조하려 해도 브라우저가 이를 원천적으로 무시합니다. "안전하게(Secure) 보장된 값"이라는 뜻입니다.
+* **`Fetch-Site`:** 이 요청(Fetch)이 발생한 출처와 목적지 사이트(Site)의 관계가 무엇인지 명시합니다.
+
+**내부 작동 메커니즘:**
+브라우저는 요청을 서버로 보낼 때, 현재 페이지와 목적지 서버의 도메인을 비교하여 아래 네 가지 중 하나의 값을 `Sec-Fetch-Site` 헤더에 강제로 주입합니다.
+
+1. `same-origin`: 출처가 완벽히 동일함.
+2. `same-site`: 서브도메인만 다르고 최상위 도메인은 같음.
+3. `cross-site`: 완전히 다른 외부 도메인에서 온 요청임. (★ 해커의 악성 사이트)
+4. `none`: 사용자가 직접 주소창에 URL을 입력하거나 북마크를 눌러서 접근함.
+
+**발생 가능한 사이드 이펙트:**
+이 기술의 유일한 약점은 **구형 브라우저(Internet Explorer 등)와의 호환성**입니다. 오래된 브라우저는 `Sec-Fetch-Site` 헤더 자체를 전송하지 않습니다. 만약 서버가 이 헤더가 없는 요청을 무조건 악성 공격으로 간주하고 차단한다면, 구형 기기를 사용하는 정상적인 고객들이 서비스를 전혀 이용하지 못하는 심각한 가용성 장애(사이드 이펙트)가 발생합니다.
+
+**모던 백엔드 방어 코드 (Node.js / Express):**
+위의 사이드 이펙트를 우회하기 위해, 모던 백엔드 서버는 전역 미들웨어를 사용하여 아래와 같이 안전하고 유연한 방어벽을 구축합니다.
+
+```javascript
+const express = require('express');
+const app = express();
+
+app.use(express.json());
+
+// Fetch Metadata 기반의 모던 보안 미들웨어
+const fetchMetadataSecurityMiddleware = (req, res, next) => {
+  const secFetchSite = req.headers['sec-fetch-site'];
+
+  // 사이드 이펙트 방어: 구형 브라우저 등 헤더를 지원하지 않는 클라이언트의 경우
+  // 서비스를 차단하지 않고 다음 미들웨어(기존 CORS 및 인증 로직)로 자연스럽게 통과시킵니다.
+  if (!secFetchSite) {
+    return next();
+  }
+
+  // 브라우저가 동일한 출처나 같은 사이트에서 보낸 요청은 안전하므로 허용합니다.
+  if (secFetchSite === 'same-origin' || secFetchSite === 'same-site') {
+    return next();
+  }
+
+  // 사용자가 주소창을 직접 치고 들어온 경우(none)나, 단순 조회용 GET/HEAD 요청은 통과시킵니다.
+  if (secFetchSite === 'none' || req.method === 'GET' || req.method === 'HEAD') {
+    return next();
+  }
+
+  // 핵심 방어 로직: 그 외의 모든 외부 사이트(cross-site)에서 들어오는 
+  // 상태 변경(POST, PUT, DELETE) 요청은 악성 CSRF 공격으로 간주하고 즉시 차단합니다.
+  // 이로써 서버의 비즈니스 로직(송금 로직 등)이 아예 실행되지 않도록 원천 봉쇄합니다.
+  if (secFetchSite === 'cross-site') {
+    return res.status(403).json({
+      error: "보안 정책 위반: 신뢰할 수 없는 외부 출처에서의 상태 변경 요청이 차단되었습니다."
+    });
+  }
+
+  next();
+};
+
+// 모든 라우터에 보안 미들웨어를 최상단에 적용합니다.
+app.use(fetchMetadataSecurityMiddleware);
+
+// 실제 비즈니스 로직 라우터
+app.post('/api/remittance', (req, res) => {
+  const amount = req.body.amount;
+  
+  // 보안 미들웨어를 통과한 안전한 요청만 이곳에 도달하여 데이터베이스를 변경합니다.
+  console.log(`안전하게 ${amount}원 송금 로직이 실행되었습니다.`);
+  
+  res.status(200).json({
+    message: "송금이 성공적으로 완료되었습니다.",
+    amount: amount
+  });
+});
+
+app.listen(8080, () => {
+  console.log('Fetch Metadata 보안이 적용된 서버가 8080 포트에서 실행 중입니다.');
+});
+
+```
+
+이 미들웨어 하나만으로도 서버는 불필요한 연산 없이 안전하지 않은 교차 출처 요청을 최상단에서 폐기할 수 있습니다.
 
 ## 요약
 
-브라우저가 실제 Request 전 `Origin` 헤더를 포함한 `Preflight Request` 를 보내는데 이때 응답으로 오는 `Access-Control-Allow-Origin` 과 `Origin` 를 비교하여 허용되지 않은 `Origin`이면 실제 Request를 보내지 않음
-
-
-
-
-
-
-
-
-
-
-
+* 브라우저는 출처가 다를 경우 무조건 요청을 차단하는 것이 아니라, **서버가 보낸 응답 데이터를 JavaScript가 읽지 못하도록 가리는 것**입니다.
+* 부작용(사이드 이펙트)을 일으킬 수 있는 복잡한 요청(`application/json` 등)을 보낼 때, 브라우저는 실제 요청 전 `OPTIONS` 메서드를 이용한 `Preflight Request`를 보내 서버의 허용 여부를 사전 검증합니다.
+* 안전한 웹 애플리케이션을 위해서는 올바른 CORS 헤더 설정뿐만 아니라, **SameSite 쿠키 속성(Lax/Strict)** 과 **Fetch Metadata (`Sec-Fetch-Site`)** 를 이용한 방어가 반드시 동반되어야 악의적인 데이터 조작(CSRF)을 막아낼 수 있습니다.
