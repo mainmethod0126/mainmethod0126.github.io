@@ -151,14 +151,6 @@ async function findAssignableCounters() {
 
 여기서 claim은 단순한 실행 lock이 아니라 배정 후보에서 제외되는 업무 상태다.
 
-## token과 finalize는 별도 주제다
-
-claim은 단순 예약 표시보다 강한 계약이 될 수 있다. claim에 token이 포함되면 최종 배정은 claim token이 아직 유효할 때만 확정되어야 한다.
-
-이 token 기반 finalize 흐름은 lock과 claim의 차이보다 한 단계 더 구체적인 주제이므로 별도 문서에서 다룬다.
-
-- [Token 기반 claim과 finalize](./token-claim-finalize)
-
 ## 정리
 
 lock과 claim은 둘 다 다른 작업을 막는다. 하지만 막는 대상이 다르다.
@@ -175,4 +167,4 @@ claim = 자원 선택을 막는다.
 누가 이 자원을 이미 고른 상태인가? -> claim
 ```
 
-그래서 claim은 단순 lock이 아니다. TTL이 있는 예약 상태이며, token 기반 finalize로 최종 배정에 승격될 수 있는 중간 배정 상태다.
+그래서 claim은 단순 lock이 아니다. 실행 구간을 막는 장치가 아니라, 자원이 이미 선택된 상태임을 저장하는 중간 배정 상태다.
