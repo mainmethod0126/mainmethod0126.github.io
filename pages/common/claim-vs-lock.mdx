@@ -1,0 +1,178 @@
+# Claim과 lock은 무엇이 다른가
+
+claim과 lock은 둘 다 TTL이 있을 수 있고, token을 사용할 수 있으며, 다른 작업이 끼어들지 못하게 막는다는 점에서 비슷해 보인다. 하지만 둘의 역할은 다르다.
+
+예를 들어 은행 창구처럼 한 번에 한 고객에게만 배정되어야 하는 자원이 있다고 생각해보자. 여러 사람이 동시에 같은 창구를 고르지 않게 하려면, 실행 중인 코드와 배정 중인 자원을 서로 다른 방식으로 보호해야 한다.
+
+핵심 차이는 이것이다.
+
+```text
+lock  = 지금 이 작업을 나만 실행하게 해줘
+claim = 이 창구를 내가 배정하려고 예약해둘게
+```
+
+lock은 실행 구간을 보호한다. claim은 자원이 배정 후보로 중복 선택되지 않도록 보호한다.
+
+## 간단한 예시
+
+은행 창구를 예로 들어보자.
+
+은행에 창구가 1번, 2번, 3번 있고, 여러 직원이 고객을 창구에 배정한다고 가정한다.
+
+### Lock은 코드 실행을 막는다
+
+lock은 특정 작업이 동시에 실행되지 않게 한다.
+
+```ts
+await lock.runExclusive('counter-assignment', async () => {
+  const counter = await findEmptyCounter();
+  await assignCustomerToCounter(customerId, counter.id);
+});
+```
+
+이 코드는 `counter-assignment` 작업을 한 번에 하나만 실행하게 만든다.
+
+즉 lock의 의미는 다음과 같다.
+
+```text
+내가 이 코드 블록을 실행하는 동안 다른 사람은 기다려.
+```
+
+작업이 끝나면 lock은 풀린다. lock 자체는 "3번 창구가 고객 A에게 배정 진행 중"이라는 업무 상태를 남기지 않는다.
+
+### Claim은 자원을 예약한다
+
+claim은 특정 자원이 배정 진행 중이라는 상태를 남긴다.
+
+```ts
+const claim = await claimCounter('counter-3', 'customer-A');
+
+if (!claim) {
+  return tryAnotherCounter();
+}
+
+await guideCustomerToCounter('customer-A', 'counter-3');
+await finalizeCounterAssignment(claim);
+```
+
+이 코드에서 `claimCounter()`가 성공하면 다음 상태가 저장된다.
+
+```text
+counter-3은 customer-A에게 배정 진행 중이다.
+```
+
+아직 고객이 창구에 앉은 것은 아니다. 하지만 다른 직원은 3번 창구를 다른 고객에게 배정하면 안 된다.
+
+즉 claim의 의미는 다음과 같다.
+
+```text
+내가 이 자원을 배정 중이니까 다른 사람은 이 자원을 후보로 고르지 마.
+```
+
+## 왜 lock만으로는 부족할 수 있는가
+
+lock을 짧게 잡고 자원을 고른 뒤 풀어버리면 문제가 생길 수 있다.
+
+```ts
+let selectedCounter: Counter;
+
+await lock.runExclusive('counter-selection', async () => {
+  selectedCounter = await findEmptyCounter();
+});
+
+await guideCustomerToCounter(customerId, selectedCounter.id);
+await assignCustomerToCounter(customerId, selectedCounter.id);
+```
+
+이 흐름은 위험하다.
+
+```text
+1. 직원 A가 lock을 잡고 3번 창구를 고른다.
+2. 직원 A가 lock을 푼다.
+3. 직원 A가 고객을 3번 창구로 안내하는 중이다.
+4. 직원 B가 lock을 잡고 빈 창구를 찾는다.
+5. 3번 창구가 아직 최종 배정되지 않았으므로 비어 보인다.
+6. 직원 B도 3번 창구를 고른다.
+```
+
+lock은 "고르는 코드"만 보호했을 뿐, "3번 창구가 배정 진행 중"이라는 상태를 남기지 않았기 때문이다.
+
+## lock을 길게 잡으면 되지 않을까
+
+가능하다. 최종 배정이 끝날 때까지 lock을 잡고 있으면 중복 배정을 막을 수 있다.
+
+```ts
+await lock.runExclusive('counter-assignment', async () => {
+  const counter = await findEmptyCounter();
+  await guideCustomerToCounter(customerId, counter.id);
+  await assignCustomerToCounter(customerId, counter.id);
+});
+```
+
+이 방식은 단순하다. 하지만 오래 걸리는 작업이 lock 안에 들어간다.
+
+```text
+직원 A가 고객을 안내하고 확인하는 동안
+직원 B, 직원 C는 다른 창구가 비어 있어도 기다려야 한다.
+```
+
+창구가 여러 개라면 비효율적이다. 1번 창구와 2번 창구는 서로 다른 자원인데도, 큰 lock 하나 때문에 모든 배정이 직렬화된다.
+
+## claim은 중간 상태를 저장한다
+
+claim 방식은 lock을 오래 잡지 않고도 자원 중복 선택을 막는다.
+
+```ts
+const claim = await claimCounter('counter-3', 'customer-A');
+
+if (!claim) {
+  return tryAnotherCounter();
+}
+
+try {
+  await guideCustomerToCounter('customer-A', 'counter-3');
+  await finalizeCounterAssignment(claim);
+} catch (error) {
+  await releaseCounterClaim(claim);
+  throw error;
+}
+```
+
+이제 다른 직원이 창구를 찾을 때 3번 창구는 제외된다.
+
+```ts
+async function findAssignableCounters() {
+  return counters.filter((counter) => {
+    return !counter.assignedCustomerId
+      && !counter.claim;
+  });
+}
+```
+
+여기서 claim은 단순한 실행 lock이 아니라 배정 후보에서 제외되는 업무 상태다.
+
+## token과 finalize는 별도 주제다
+
+claim은 단순 예약 표시보다 강한 계약이 될 수 있다. claim에 token이 포함되면 최종 배정은 claim token이 아직 유효할 때만 확정되어야 한다.
+
+이 token 기반 finalize 흐름은 lock과 claim의 차이보다 한 단계 더 구체적인 주제이므로 별도 문서에서 다룬다.
+
+- [Token 기반 claim과 finalize](./token-claim-finalize)
+
+## 정리
+
+lock과 claim은 둘 다 다른 작업을 막는다. 하지만 막는 대상이 다르다.
+
+```text
+lock  = 작업 실행을 막는다.
+claim = 자원 선택을 막는다.
+```
+
+더 실전적인 기준은 다음과 같다.
+
+```text
+누가 이 코드를 동시에 실행하면 안 되는가? -> lock
+누가 이 자원을 이미 고른 상태인가? -> claim
+```
+
+그래서 claim은 단순 lock이 아니다. TTL이 있는 예약 상태이며, token 기반 finalize로 최종 배정에 승격될 수 있는 중간 배정 상태다.

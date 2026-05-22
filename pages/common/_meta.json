@@ -4,6 +4,8 @@
     "The-Reason-for-Representing-Storage-Units-in-Computers-with-Two-Hexadecimal-Digits-Like-0xFF": "컴퓨터에서 용량 단위를 0xFF와같이 16진수 두개로 표시하는 이유",
     "Tasks-to-be-performed-initially-when-creating-a-GitHub-repository": "Github 공개 레포 생성시 초기에 해야하는 것들",
     "Base64": "Base64",
-    "Structure-of-a-URL": "URL의 구조"
+    "Structure-of-a-URL": "URL의 구조",
+    "claim-vs-lock": "Claim과 Lock은 무엇이 다른가",
+    "token-claim-finalize": "Claim과 Reservation은 무엇이 다른가"
 }
   

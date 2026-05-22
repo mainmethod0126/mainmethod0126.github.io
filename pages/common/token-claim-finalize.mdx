@@ -1,0 +1,183 @@
+# Claim과 reservation은 무엇이 다른가
+
+claim은 단순한 예약 표시보다 강한 계약이 될 수 있다. token 기반 claim은 예약 상태와 소유권 증명서를 함께 가진다.
+
+핵심은 다음 차이다.
+
+```text
+reservation = 자원을 예약 중이라는 표시
+claim       = 자원을 예약 중이라는 표시 + token으로 증명되는 확정 권한
+```
+
+## 왜 그냥 reservation이 아니라 claim인가
+
+단순 reservation은 보통 이렇게 느슨하게 이해된다.
+
+```text
+counter-3은 누군가 예약 중이다.
+```
+
+claim은 더 강하다.
+
+```text
+counter-3은 token abc를 가진 작업이 예약 중이다.
+최종 배정도 token abc가 맞아야 가능하다.
+```
+
+즉 claim은 "내가 자리를 맡았다"뿐 아니라 "내가 맡은 사람이라는 증명서도 가지고 있다"는 의미다.
+
+## claim은 token을 가진다
+
+은행 창구 배정 예시로 보면 claim은 다음 형태다.
+
+```ts
+type CounterClaim = {
+  counterId: string;
+  customerId: string;
+  token: string;
+  expiresAt: string;
+};
+```
+
+예약할 때 token을 발급한다.
+
+```ts
+const claim = await claimCounter('counter-3', 'customer-A');
+// claim.token = 'abc'
+```
+
+이후 최종 배정할 때는 `counterId`나 `customerId`만 확인하지 않는다. 현재 저장소에 남아 있는 claim과 내가 가진 claim의 token이 같아야 한다.
+
+```ts
+async function finalizeCounterAssignment(claim: CounterClaim) {
+  const currentClaim = await getCounterClaim(claim.counterId);
+
+  if (!currentClaim) {
+    throw new Error('claim expired');
+  }
+
+  if (currentClaim.token !== claim.token) {
+    throw new Error('claim lost');
+  }
+
+  await assignCustomerToCounter(claim.customerId, claim.counterId);
+  await deleteCounterClaim(claim.counterId);
+}
+```
+
+이 코드의 의미는 다음과 같다.
+
+```text
+내가 예전에 counter-3을 예약했다는 사실만으로는 부족하다.
+지금 저장소의 counter-3 claim token이 내가 가진 token과 같아야 확정할 수 있다.
+```
+
+## token이 필요한 이유
+
+분산 환경에서는 오래된 작업이 늦게 돌아올 수 있다.
+
+```text
+1. A가 counter-3을 claim한다. token = abc
+2. A 작업이 오래 걸린다.
+3. A의 claim TTL이 만료된다.
+4. B가 counter-3을 새로 claim한다. token = xyz
+5. A가 뒤늦게 finalize를 시도한다.
+```
+
+A가 들고 있는 claim은 다음과 같다.
+
+```text
+counterId: counter-3
+customerId: customer-A
+token: abc
+```
+
+하지만 저장소의 현재 claim은 다음과 같다.
+
+```text
+counterId: counter-3
+customerId: customer-B
+token: xyz
+```
+
+finalize는 token을 비교한다.
+
+```ts
+if (currentClaim.token !== claim.token) {
+  throw new Error('claim lost');
+}
+```
+
+그래서 A의 finalize는 실패한다.
+
+```text
+A: 내가 counter-3 예약했었으니 확정할게.
+저장소: 지금 counter-3 claim token은 xyz다. 너의 abc는 오래된 claim이다.
+```
+
+이것이 "token 조건으로 최종 배정에 승격된다"는 뜻이다.
+
+## claim은 최종 확정 전의 임시 권한이다
+
+claim은 최종 상태가 아니다. 최종 상태로 바뀌기 전의 pending 상태다.
+
+```text
+claim 생성 -> 준비 작업 -> token 확인 -> 최종 배정
+```
+
+코드로 쓰면 다음 흐름이다.
+
+```ts
+const claim = await claimCounter('counter-3', 'customer-A');
+
+await prepareCounter(claim.counterId);
+
+await finalizeCounterAssignment(claim);
+```
+
+`finalizeCounterAssignment()`는 claim token이 아직 저장소에 남아 있을 때만 성공해야 한다.
+
+```text
+claim token이 맞다    -> 최종 배정 성공
+claim이 없다          -> TTL 만료 또는 release됨
+claim token이 다르다  -> 다른 작업이 새 claim을 획득함
+```
+
+## 낙관적 락과 비슷한가
+
+비슷하다. claim은 다음 패턴에 가깝다.
+
+```text
+후보 예약 -> 오래 걸리는 작업 -> token이 아직 맞으면 finalize
+```
+
+낙관적 락이 version을 확인한다면, token 기반 claim은 token을 확인한다.
+
+```ts
+await updateRow({
+  id,
+  expectedVersion: version
+});
+```
+
+claim finalize는 이와 비슷하게 동작한다.
+
+```ts
+await finalizeAssignment({
+  counterId,
+  expectedToken: claim.token
+});
+```
+
+다만 claim은 version 확인만 하는 것이 아니라, TTL이 있는 pending reservation을 먼저 만든다는 차이가 있다.
+
+## 정리
+
+token 기반 claim은 단순 reservation보다 강한 계약이다.
+
+```text
+reservation = 자리 맡음
+claim       = 자리 맡음 + 내가 맡은 사람이라는 token 증명 + 그 token으로만 최종 확정 가능
+```
+
+finalize는 claim을 최종 상태로 바꾸는 마지막 단계다. 이 단계는 현재 저장소의 claim token과 호출자가 가진 token이 같은 경우에만 성공해야 한다.
