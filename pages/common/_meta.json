@@ -6,6 +6,6 @@
     "Base64": "Base64",
     "Structure-of-a-URL": "URL의 구조",
     "claim-vs-lock": "Claim과 Lock은 무엇이 다른가",
-    "token-claim-finalize": "Claim과 Reservation은 무엇이 다른가"
+    "token-claim-finalize": "Claim과 Reservation은 무엇이 다른가",
+    "understanding-and-comparison-of-lock-free-ring-buffer-and-mutex-lock": "락프리 링 버퍼(Lock-Free Ring Buffer)와 Mutex Lock의 이해 및 비교"
 }
-  
