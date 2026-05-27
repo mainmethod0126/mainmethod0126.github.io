@@ -36,41 +36,144 @@
 
 ---
 
-## 3. 단순 연산을 위한 모던 프랙티스: `std::atomic`
+## 3. 락프리 링 버퍼 예시 코드: MPSC 입금 이벤트 처리
 
-오직 "동시다발적인 잔액 증가"만을 목적으로 한다면, 복잡한 링 버퍼를 직접 구현하는 것보다 최신 언어에서 제공하는 원자적 타입(Atomic Type)을 사용하는 것이 현대적인 프로그래밍(Modern Practice) 방식입니다.
+아래 코드는 여러 생산자 스레드가 `DepositEvent`를 링 버퍼에 넣고, 단일 소비자 스레드만 `balance`를 갱신하는 예시입니다. 핵심은 생산자가 잔액을 직접 수정하지 않는다는 점입니다. 생산자는 CAS로 링 버퍼의 슬롯을 예약하고 이벤트만 기록하며, 소비자 하나가 순서대로 이벤트를 꺼내 잔액을 더합니다.
 
 ```cpp
-#include <iostream>
+#include <array>
 #include <atomic>
+#include <cstddef>
+#include <iostream>
 #include <thread>
-#include <vector>
 
-// 잔액을 원자적(Atomic)으로 관리
-std::atomic<int> balance(0);
+template <typename T, std::size_t Capacity>
+class MpscRingBuffer {
+    static_assert((Capacity & (Capacity - 1)) == 0,
+                  "Capacity must be a power of two");
 
-void deposit(int amount) {
-    // fetch_add는 하드웨어 수준에서 단일 명령어로 처리되어 스레드 안전성을 보장합니다.
-    // std::memory_order_relaxed를 통해 불필요한 메모리 동기화 오버헤드를 최소화합니다.
-    balance.fetch_add(amount, std::memory_order_relaxed);
-}
+    struct alignas(64) Slot {
+        std::atomic<std::size_t> sequence;
+        T value;
+    };
+
+    std::array<Slot, Capacity> buffer_;
+    std::atomic<std::size_t> tail_{0}; // producer들이 CAS로 증가시킴
+    std::size_t head_{0};              // consumer 하나만 접근
+
+public:
+    MpscRingBuffer() {
+        for (std::size_t i = 0; i < Capacity; ++i) {
+            buffer_[i].sequence.store(i, std::memory_order_relaxed);
+        }
+    }
+
+    bool try_push(const T& item) {
+        std::size_t pos = tail_.load(std::memory_order_relaxed);
+
+        for (;;) {
+            Slot& slot = buffer_[pos & (Capacity - 1)];
+            std::size_t seq = slot.sequence.load(std::memory_order_acquire);
+            std::ptrdiff_t diff =
+                static_cast<std::ptrdiff_t>(seq) -
+                static_cast<std::ptrdiff_t>(pos);
+
+            if (diff == 0) {
+                if (tail_.compare_exchange_weak(
+                        pos,
+                        pos + 1,
+                        std::memory_order_relaxed,
+                        std::memory_order_relaxed)) {
+                    slot.value = item;
+                    slot.sequence.store(pos + 1, std::memory_order_release);
+                    return true;
+                }
+            } else if (diff < 0) {
+                // consumer가 아직 이 슬롯을 비우지 않았으므로 링 버퍼가 가득 찬 상태
+                return false;
+            } else {
+                pos = tail_.load(std::memory_order_relaxed);
+            }
+        }
+    }
+
+    bool try_pop(T& out) {
+        Slot& slot = buffer_[head_ & (Capacity - 1)];
+        std::size_t seq = slot.sequence.load(std::memory_order_acquire);
+        std::ptrdiff_t diff =
+            static_cast<std::ptrdiff_t>(seq) -
+            static_cast<std::ptrdiff_t>(head_ + 1);
+
+        if (diff != 0) {
+            return false;
+        }
+
+        out = slot.value;
+        slot.sequence.store(head_ + Capacity, std::memory_order_release);
+        ++head_;
+        return true;
+    }
+};
+
+struct DepositEvent {
+    int amount;
+};
 
 int main() {
-    std::thread t1(deposit, 500);
-    std::thread t2(deposit, 1000);
-    
-    t1.join();
-    t2.join();
-    
-    std::cout << "최종 잔액: " << balance.load() << "원\n";
+    constexpr int producer_count = 2;
+    constexpr int repeat_count = 100000;
+
+    MpscRingBuffer<DepositEvent, 1024> queue;
+    std::atomic<int> producers_done{0};
+    int balance = 0; // consumer 스레드만 수정하므로 atomic이나 mutex가 필요 없음
+
+    auto producer = [&](int amount) {
+        for (int i = 0; i < repeat_count; ++i) {
+            DepositEvent event{amount};
+
+            while (!queue.try_push(event)) {
+                std::this_thread::yield();
+            }
+        }
+
+        producers_done.fetch_add(1, std::memory_order_release);
+    };
+
+    auto consumer = [&] {
+        DepositEvent event{};
+
+        while (producers_done.load(std::memory_order_acquire) < producer_count) {
+            while (queue.try_pop(event)) {
+                balance += event.amount;
+            }
+
+            std::this_thread::yield();
+        }
+
+        while (queue.try_pop(event)) {
+            balance += event.amount;
+        }
+    };
+
+    std::thread consumer_thread(consumer);
+    std::thread p1(producer, 500);
+    std::thread p2(producer, 1000);
+
+    p1.join();
+    p2.join();
+    consumer_thread.join();
+
+    std::cout << "최종 잔액: " << balance << "원\n";
     return 0;
 }
 
 ```
 
-### 사이드 이펙트 고려사항 (캐시 라인 바운싱)
+위 코드에서 `tail_`은 여러 생산자가 동시에 증가시키므로 `compare_exchange_weak`를 사용합니다. 반면 `head_`는 소비자 하나만 증가시키므로 일반 정수로 충분합니다. 슬롯별 `sequence` 값은 "이 슬롯이 현재 몇 번째 쓰기/읽기 순서에 속하는지"를 표시하여, 배열 인덱스가 다시 0으로 돌아오는 Wrap-around 상황에서도 오래된 데이터와 새 데이터를 구분합니다.
 
-원자적 연산이 완벽해 보이지만 사이드 이펙트가 존재합니다. 수많은 스레드가 하나의 `std::atomic` 변수에 쉴 새 없이 접근하면, CPU 코어들 사이에 해당 메모리 주소가 포함된 L1/L2 캐시 라인을 서로 무효화(Invalidation)시키고 다시 가져오는 거짓 공유(False Sharing)와 유사한 현상이 발생하여 심각한 성능 병목이 생길 수 있습니다.
+### 사이드 이펙트 고려사항 (바쁜 대기와 용량 제한)
+
+락프리 링 버퍼는 뮤텍스처럼 스레드를 재우지 않는 대신, 버퍼가 가득 찼거나 비어 있을 때 반복적으로 재시도하는 바쁜 대기(Busy Waiting)가 발생할 수 있습니다. 또한 고정 크기 배열을 재사용하므로 처리량이 생산량을 따라가지 못하면 `try_push`가 실패합니다. 실제 서비스에서는 이벤트 유실 허용 여부, 재시도 정책, 백프레셔(Backpressure), 버퍼 크기 산정을 함께 설계해야 합니다.
 
 ---
 
@@ -113,14 +216,14 @@ void deposit(int amount) {
 
 락프리와 뮤텍스는 성능 특성이 완전히 다르며, 상황에 맞는 도구를 선택해야 합니다.
 
-| 비교 항목 | 락프리 (Lock-Free / Atomic) | 뮤텍스 락 (Mutex Lock) |
+| 비교 항목 | 락프리 링 버퍼 (Lock-Free Ring Buffer) | 뮤텍스 락 (Mutex Lock) |
 | --- | --- | --- |
 | **CPU 사이클 소모** | 약 10 ~ 수백 사이클 (매우 빠름) | 수만 ~ 수백만 사이클 (매우 느림) |
 | **운영체제 개입** | 없음 (유저 모드에서 처리) | 있음 (시스템 콜, 커널 모드 전환) |
 | **컨텍스트 스위칭** | 발생하지 않음 | 빈번하게 발생함 |
 | **가장 큰 부작용** | **바쁜 대기 (Busy Waiting):** 실패 시 무한 루프를 돌며 CPU 100% 점유 | **오버헤드 (Overhead):** 스레드를 재우고 깨우는 비용이 작업 비용보다 큼 |
-| **적합한 사용처** | 단순 덧셈, 플래그 변경 등 **매우 짧고 단순한 연산** | DB 조회, 파일 I/O 등 **길고 복잡한 트랜잭션 연산** |
+| **적합한 사용처** | 로그, 이벤트, 입금 요청처럼 **짧은 메시지를 빠르게 전달하는 작업** | DB 조회, 파일 I/O 등 **길고 복잡한 트랜잭션 연산** |
 
 **핵심 요약:**
-잔액 증감과 같이 순식간에 끝나는 연산에서 스레드를 재우고 깨우는 것은 배보다 배꼽이 더 큰 상황입니다. 이때는 **Atomic이나 락프리 링 버퍼**가 압도적으로 유리합니다.
+여러 스레드가 직접 잔액을 수정하게 두지 않고, **락프리 링 버퍼로 입금 이벤트를 전달한 뒤 단일 소비자가 집계**하면 락 경합과 데이터 경합을 줄일 수 있습니다.
 하지만 연산이 몇 밀리초(ms) 이상 걸리는 긴 작업이라면, 락을 획득하지 못한 스레드가 무한 루프를 돌며 CPU를 낭비(Busy Waiting)하게 두는 것보다, **Mutex**를 사용해 스레드를 깔끔하게 재우고 다른 유용한 프로그램에 CPU를 양보하는 것이 올바른 설계입니다.
