@@ -12,6 +12,7 @@
     "type": "separator"
   },
   "common": "common",
+  "design-pattern": "design patterns",
   "network": "network",
   "linux": "linux",
   "msa": "msa",

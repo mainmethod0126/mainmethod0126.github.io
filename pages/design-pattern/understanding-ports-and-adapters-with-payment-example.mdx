@@ -1,0 +1,70 @@
+# 결제 예제로 이해하는 포트와 어댑터 패턴
+
+포트는 애플리케이션이 필요로 하는 기능의 계약이고, 어댑터는 외부 시스템을 그 계약에 맞게 연결하는 구현이다.
+
+결제 기능을 예로 들면 전체 흐름은 다음과 같다.
+
+```text
+OrderService
+    → PaymentPort
+        → StripePaymentAdapter
+            → StripeClient
+```
+
+## OrderService가 필요한 기능을 포트로 정의한다
+
+`OrderService`는 Stripe에 직접 의존하지 않고 자신에게 필요한 결제 기능만 정의한다.
+
+```ts
+interface PaymentPort {
+  pay(amount: number): Promise<void>;
+}
+
+class OrderService {
+  constructor(private readonly payment: PaymentPort) {}
+
+  async order(amount: number): Promise<void> {
+    await this.payment.pay(amount);
+  }
+}
+```
+
+## 개발자가 어댑터를 구현한다
+
+개발자는 `PaymentPort`를 보고 Stripe를 연결하는 어댑터를 구현한다.
+
+```ts
+class StripePaymentAdapter implements PaymentPort {
+  constructor(private readonly stripeClient: StripeClient) {}
+
+  async pay(amount: number): Promise<void> {
+    await this.stripeClient.createPayment({
+      totalAmount: amount
+    });
+  }
+}
+```
+
+## 만들어진 어댑터를 주입한다
+
+```ts
+const payment = new StripePaymentAdapter(stripeClient);
+const orderService = new OrderService(payment);
+```
+
+`OrderService`는 `PaymentPort`만 알고 Stripe의 메서드나 요청 형식은 알지 못한다.
+
+## 내가 이해한 흐름
+
+> `OrderService`는 외부 의존성이 생기지 않도록 "내가 필요한 기능은 이런 것들이야"라고 `PaymentPort`를 정의한다.
+>
+> 개발자는 `PaymentPort`에 정의된 기능을 보고 외부 결제 시스템과 연결할 어댑터를 구현한다.
+>
+> 만들어진 어댑터를 `OrderService`에 주입한다.
+>
+> 나중에 `StripeClient`의 규격이 바뀌어도 `OrderService`는 변경하지 않고 `StripePaymentAdapter`에서 변경을 처리한다.
+>
+> 결제 업체 자체를 바꾼다면 새로운 어댑터를 구현하고 주입 대상만 변경한다.
+
+즉 포트와 어댑터를 사용하는 이유는 **외부 시스템의 규격과 변화가 핵심 로직인 `OrderService`까지 퍼지지 않도록 하기 위해서**다.
+
