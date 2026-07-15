@@ -106,6 +106,9 @@ const config: DocsThemeConfig = {
       if (title === "common") {
         return <>📒 {title}</>;
       }
+      if (title === "design patterns") {
+        return <>📒 {title}</>;
+      }
       if (title === "network") {
         return <>📒 {title}</>;
       }
