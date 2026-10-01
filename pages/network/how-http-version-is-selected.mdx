@@ -1,0 +1,39 @@
+# HTTP/1.1과 HTTP/2는 어떻게 선택될까?
+
+HTTPS에서는 **클라이언트가 지원 목록을 전달하고, 서버가 공통으로 지원하는 HTTP 버전 중 하나를 최종 선택한다**
+
+이 과정은 TLS 핸드셰이크의 **애플리케이션 계층 프로토콜 협상(Application-Layer Protocol Negotiation, ALPN)**을 통해 이루어진다. [RFC 7301](https://www.rfc-editor.org/rfc/rfc7301.html#section-3)
+
+아래는 HTTPS에서 HTTP/1.1과 HTTP/2를 선택하는 경우를 설명한다
+
+## 선택 흐름
+
+TLS 1.3으로 새 연결을 만들고 HTTP/2를 선택하는 예시다. 세션 재개와 0-RTT는 제외한다
+
+1. **TCP 연결 수립**: 클라이언트와 서버가 TCP 3방향 핸드셰이크를 진행한다
+2. **지원 목록 전달**: 클라이언트가 `ClientHello`에 `h2`, `http/1.1`을 선호 순서로 전달한다
+3. **서버의 선택 결과 전달**: 서버가 `EncryptedExtensions`에 선택한 `h2`를 전달한다
+4. **API 통신**: TLS 핸드셰이크를 마친 뒤 HTTP/2 연결 초기화를 진행하고, HTTP/2로 API 요청과 응답을 주고받는다
+
+`h2`는 HTTP/2, `http/1.1`은 HTTP/1.1을 나타내는 식별자다. [HTTP/2 연결 시작](https://www.rfc-editor.org/rfc/rfc9113.html#section-3)
+
+위 흐름에서는 일부 TLS 메시지를 생략했다. `ClientHello` 다음에 서버가 보내는 `ServerHello`는 **TLS 버전과 암호 설정**을 전달한다. TLS 1.3에서 **HTTP 버전 선택 결과**를 전달하는 메시지는 `EncryptedExtensions`다. [TLS 1.3 확장 메시지 정의](https://www.rfc-editor.org/rfc/rfc8446.html#section-4.2)
+
+## 최종 선택 기준은?
+
+표준은 서버가 **양쪽이 공통으로 지원하는 프로토콜 중 서버가 가장 선호하는 프로토콜을 선택하도록 권고(`SHOULD`)**한다. [RFC 7301의 선택 규칙](https://www.rfc-editor.org/rfc/rfc7301.html#section-3.2)
+
+아래는 서버 우선순위를 따르는 예시이며, 목록의 왼쪽이 더 높은 우선순위다
+
+| 클라이언트가 전달한 목록 | 서버의 우선순위 | 선택 결과 |
+| :--- | :--- | :--- |
+| `h2`, `http/1.1` | `h2`, `http/1.1` | HTTP/2 |
+| `h2`, `http/1.1` | `http/1.1`, `h2` | HTTP/1.1 |
+| `http/1.1`, `h2` | `h2`, `http/1.1` | HTTP/2 |
+| `http/1.1` | `h2`, `http/1.1` | HTTP/1.1 |
+
+**양쪽이 HTTP/2를 지원하더라도 서버의 선택 정책에 따라 HTTP/1.1이 선택될 수 있다**
+
+서버의 우선순위는 서버 구현과 설정으로 정한다. 예를 들어 Go의 `crypto/tls`에서는 `Config.NextProtos`에 지원하는 프로토콜을 선호 순서로 설정한다. [Go 공식 문서](https://pkg.go.dev/crypto/tls#Config)
+
+HTTP 버전은 연결 단위로 선택한다. 같은 연결을 재사용하는 API 요청마다 HTTP 버전을 다시 협상하지 않는다. [프로토콜 선택과 연결의 관계](https://www.rfc-editor.org/rfc/rfc7301.html#section-3.2)
