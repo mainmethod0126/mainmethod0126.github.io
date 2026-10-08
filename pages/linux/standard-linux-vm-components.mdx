@@ -1,0 +1,199 @@
+# 리눅스의 표준적인 VM 구성 요소들
+
+리눅스의 가상 머신 구성 요소를 **필수 실행 기능**과 **선택적인 관리·화면 기능**으로 나눠 보자.
+
+## 가상 머신 실행에 필요한 기능
+
+- **호스트 운영체제(Host Operating System):** 물리 컴퓨터에서 실행되는 운영체제. (예시: Debian)
+- **게스트 운영체제(Guest Operating System):** 가상 머신 안에서 실행되는 운영체제. (예시: Windows)
+
+가상 머신이 운영체제를 실행하려면 다음 기능이 필요하다.
+
+- **가상 CPU 실행:** 게스트 운영체제의 명령을 실행한다.
+- **게스트 메모리 제공·격리:** 게스트 운영체제가 사용할 메모리와 접근 범위를 구성한다.
+- **가상 하드웨어 제공:** 부팅과 입출력에 필요한 장치를 제공한다.
+
+이 기능을 구현하는 대표적인 역할은 다음과 같다.
+
+**역할은 겹칠 수 있으며, 구현체에 따라 합쳐지거나 분리된다.**
+
+| 역할 | 기능 | 구현체 예시 |
+| :--- | :--- | :--- |
+| **하이퍼바이저**<br />(Hypervisor) | CPU·메모리 가상화와 격리. | (예시: [KVM](https://docs.kernel.org/virt/kvm/api.html)) |
+| **사용자 공간 가상 머신 모니터**<br />(Userspace Virtual Machine Monitor) | 사용자 공간에서 게스트 메모리와 가상 장치 구성.<br />가상 머신 실행 제어. | (예시: [QEMU](https://www.qemu.org/docs/master/system/introduction.html)) |
+| **시스템 에뮬레이터**<br />(System Emulator) | CPU와 장치의 동작을 소프트웨어로 재현해 운영체제 실행. | (예시: QEMU의 소프트웨어 에뮬레이션) |
+
+하이퍼바이저와 가상 머신 모니터는 동의어로도 쓰인다. [용어 관계](https://www.redhat.com/en/topics/virtualization/what-is-a-hypervisor)
+
+사용자 공간 가상 머신 모니터는 실행 위치를 구분한 표현이다.
+
+실제 구성은 실행 방식에 따라 달라진다.
+
+- **하드웨어 가상화:** 하이퍼바이저와 사용자 공간 가상 머신 모니터가 역할을 나눌 수 있다. (예시: KVM + QEMU)
+- **소프트웨어 에뮬레이션:** 시스템 에뮬레이터가 가상 CPU까지 처리할 수 있다. (예시: QEMU에 내장된 TCG(Tiny Code Generator)로 CPU 에뮬레이션)
+
+**필수인 것은 실행 기능이며, 특정 제품 조합이나 별도 프로그램의 개수가 아니다.** [실행 방식 예시](https://www.qemu.org/docs/master/system/introduction.html)
+
+## 관리 도구 없이 직접 실행하기
+
+사용자 공간 가상 머신 모니터에 CPU·메모리·디스크 설정을 전달해 실행할 수 있다.
+
+하드웨어 가상화를 사용하는 예시다. (예시: QEMU + KVM)
+
+준비 조건:
+
+- x86_64 리눅스와 QEMU 설치. 사용자 모드 네트워크 지원 필요.
+- 하드웨어 가상화 사용 가능. 실행 계정에 `/dev/kvm` 접근 권한 필요.
+- 리눅스가 설치된 `qcow2` 디스크 이미지. BIOS 부팅과 virtio 장치 지원 필요.
+- 게스트 운영체제의 DHCP 설정, SSH 서버, 로그인 계정 준비.
+
+이 예시는 그래픽 화면 없이 실행하고 SSH로 접속한다. SSH는 가상 머신 실행 자체의 필수 기능은 아니다.
+
+호스트 운영체제의 터미널에서 실행한다.
+
+`/path/to/linux.qcow2`는 준비한 디스크 이미지 경로로 바꾼다.
+
+```bash
+qemu-system-x86_64 \
+  -name demo-vm \
+  -accel kvm \
+  -m 2G -smp 2 \
+  -drive file=/path/to/linux.qcow2,format=qcow2,if=virtio \
+  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -display none \
+  -monitor stdio
+```
+
+각 옵션과 하위 설정의 의미는 다음과 같다.
+
+| 옵션 | 값·하위 설정 | 의미 |
+| :--- | :--- | :--- |
+| `-name` | `demo-vm` | QEMU에서 사용할 가상 머신 이름을 지정한다. |
+| `-accel` | `kvm` | KVM을 통해 하드웨어 가상화 기능으로 가상 CPU를 실행한다. |
+| `-m` | `2G` | 게스트 운영체제의 메모리를 2GiB로 설정한다. |
+| `-smp` | `2` | 가상 CPU를 2개로 설정한다. |
+| `-drive` | `file=/path/to/linux.qcow2` | 가상 디스크로 사용할 이미지 파일을 지정한다. |
+| `-drive` | `format=qcow2` | 디스크 이미지 형식을 `qcow2`로 지정한다. |
+| `-drive` | `if=virtio` | 게스트 운영체제에 가상 디스크를 virtio 장치로 제공한다. |
+| `-nic` | `user` | 가상 네트워크 카드와 사용자 모드 네트워크 연결을 구성한다. |
+| `-nic` | `model=virtio-net-pci` | 가상 네트워크 카드에 PCI 기반 virtio 장치 모델을 사용한다. |
+| `-nic` | `hostfwd=tcp:127.0.0.1:2222-:22` | 호스트 운영체제의 `127.0.0.1:2222`로 들어온 TCP 연결을 게스트 운영체제의 SSH 포트 `22`로 전달한다. |
+| `-display` | `none` | 가상 머신의 그래픽 출력을 표시하지 않는다. |
+| `-monitor` | `stdio` | 현재 터미널의 표준 입력·출력으로 QEMU 제어 명령을 주고받는다. |
+
+`hostfwd`에서 게스트 운영체제의 IP 주소를 생략했으므로 기본 DHCP 주소인 `10.0.2.15`로 전달한다.
+
+옵션 정의: [QEMU 실행 문서](https://www.qemu.org/docs/master/system/invocation.html)
+
+첫 번째 터미널의 `(qemu)`는 가상 머신 제어 입력창이다.
+
+`info status`로 실행 상태를 확인한다. [제어 명령](https://www.qemu.org/docs/master/system/monitor.html)
+
+같은 호스트 운영체제의 다른 터미널에서 게스트 운영체제에 접속한다.
+
+`guest`는 준비한 로그인 계정으로 바꾼다.
+
+```bash
+ssh -p 2222 guest@127.0.0.1
+```
+
+접속 후 프로그램을 실행하거나 파일을 편집한다.
+
+사용을 마치면 게스트 운영체제 안에서 정상 종료한다.
+
+## 선택적인 관리·화면 구성
+
+가상 머신 실행 기능이 준비되면, 필요한 관리·화면 기능을 추가한다.
+
+### 실행 옵션과 상태를 직접 관리하기 번거롭다면?
+
+별도의 가상화 관리 도구 없이 직접 실행하면 메모리, 디스크, 네트워크 옵션을 명령이나 스크립트로 보관해야 한다.
+
+가상 머신이 여러 개라면 **어떤 설정과 프로세스가 어떤 가상 머신에 해당하는지도 직접 관리해야 한다.**
+
+이때 **가상화 관리 API와 가상화 관리 데몬**을 추가하면 설정을 등록해 관리할 수 있다.
+
+사용자는 **가상화 관리 클라이언트**로 시작·조회·종료를 요청한다.
+
+| 역할 | 기능 | 구현체 예시 |
+| :--- | :--- | :--- |
+| **가상화 관리 API**<br />(Virtualization Management API) | 설정 등록·시작·종료·상태 조회를 공통된 방법으로 요청. | (예시: [libvirt](https://libvirt.org/goals.html)) |
+| **가상화 관리 데몬**<br />(Virtualization Management Daemon) | 백그라운드에서 가상 머신 실행과 자원을 관리하는 서비스. | (예시: [`libvirtd`, `virtqemud`](https://libvirt.org/daemons.html)) |
+| **가상화 관리 클라이언트**<br />(Virtualization Management Client) | 명령줄이나 그래픽 화면에서 관리 요청을 전달하는 프로그램. | (예시: [`virsh`](https://libvirt.org/manpages/virsh.html), [`virt-manager`](https://virt-manager.org/)) |
+
+다음은 구현체 사용 예시다. (예시: libvirt + `virsh`)
+
+가상화 관리 데몬은 구성에 따라 `libvirtd` 또는 `virtqemud`를 사용한다.
+
+준비 조건:
+
+1. 직접 실행한 가상 머신을 정상 종료한다.
+2. 동일한 디스크와 가상 하드웨어 설정을 `demo-vm`으로 등록한다.
+3. 가상화 관리 데몬에 접속할 권한을 준비한다.
+
+직접 실행한 가상 머신이 자동 등록되지는 않는다.
+
+```bash
+virsh -c qemu:///system start demo-vm
+virsh -c qemu:///system list --all
+virsh -c qemu:///system shutdown demo-vm
+```
+
+이제 긴 실행 옵션을 매번 조합하지 않고 **등록된 가상 머신 이름으로 실행한다.**
+
+실행 상태도 프로세스를 하나씩 찾는 대신 **가상 머신 목록에서 확인한다.**
+
+명령어 입력도 번거롭다면 **그래픽 가상화 관리 클라이언트**를 사용한다. (예시: `virt-manager`)
+
+가상 머신을 목록에서 선택하고 버튼으로 시작·종료할 수 있다.
+
+가상화 관리 클라이언트를 종료해도 가상화 관리 데몬이 관리하는 가상 머신은 계속 실행된다.
+
+### 부팅 화면을 확인하고 싶다면?
+
+앞의 직접 실행 예시는 `-display none`으로 화면을 숨겼다.
+
+이 상태에서 SSH 접속까지 실패하면 **부팅이 멈췄는지, 네트워크에 문제가 있는지 화면으로 확인하기 어렵다.**
+
+이때는 **가상 머신 화면을 직접 표시하는 기능**을 사용한다.
+
+| 역할 | 기능 | 구현체 예시 |
+| :--- | :--- | :--- |
+| **그래픽 사용자 인터페이스 도구 모음**<br />(GUI Toolkit) | 창·버튼·메뉴를 만드는 라이브러리. | (예시: [GTK](https://www.gtk.org/)) |
+| **데스크톱 환경**<br />(Desktop Environment) | 바탕 화면·창 전환·설정 등 그래픽 작업 환경. | (예시: [GNOME](https://www.gnome.org/about/)) |
+
+앞의 직접 실행 예시에서는 호스트 운영체제의 그래픽 세션과 화면 표시 기능을 준비한다. (예시: QEMU의 GTK 화면 표시 기능)
+
+가상 머신을 정상 종료하고 아래 옵션으로 바꿔 다시 실행한다.
+
+```text
+-display none → -display gtk
+```
+
+이제 **SSH가 연결되지 않아도 부팅 화면과 오류 메시지를 창에서 확인할 수 있다.** [화면 표시 옵션](https://www.qemu.org/docs/master/system/invocation.html#display-options)
+
+게스트 운영체제가 같은 그래픽 사용자 인터페이스 도구 모음을 사용할 필요는 없다. (예시: GTK로 만든 창에 Windows 화면 표시)
+
+키보드·마우스 입력을 해제하고 다른 창을 선택하면 호스트 운영체제에서 작업할 수 있다.
+
+입력 해제 단축키는 화면 표시 프로그램과 설정에 따라 다르다.
+
+### 다른 컴퓨터에서 가상 머신 화면을 사용하고 싶다면?
+
+직접 화면을 표시해도 **호스트 운영체제에 열린 창이 내 컴퓨터에 자동으로 나타나지는 않는다.**
+
+이때 **원격 화면 서버와 원격 화면 클라이언트**를 원격 화면 프로토콜로 연결한다.
+
+| 역할 | 기능 | 예시 |
+| :--- | :--- | :--- |
+| **원격 화면 프로토콜**<br />(Remote Display Protocol) | 화면과 키보드·마우스 입력을 전달하는 통신 규칙. | (예시: [SPICE](https://www.spice-space.org/spice-user-manual.html)) |
+| **원격 화면 서버**<br />(Remote Display Server) | 가상 머신 화면을 전송하고 키보드·마우스 입력을 받는 구성 요소. | (예시: [QEMU에서 사용하는 SPICE 서버](https://www.spice-space.org/spice-user-manual.html)) |
+| **원격 화면 클라이언트**<br />(Remote Display Client) | 가상 머신 화면에 접속하는 프로그램. | (예시: [`remote-viewer`](https://www.spice-space.org/spice-user-manual.html)) |
+
+원격 화면 서버와 접속 설정을 준비하고, 내 컴퓨터에서 원격 화면 클라이언트로 접속한다.
+
+이제 **서버 앞에 가지 않고도 가상 머신의 설치 화면과 바탕 화면을 조작할 수 있다.**
+
+원격 화면 클라이언트를 닫아도 일반적으로 가상 머신은 계속 실행된다.
+
+가상 머신 실행 프로그램이 직접 표시하는 창은 닫을 때 가상 머신도 종료될 수 있다.
