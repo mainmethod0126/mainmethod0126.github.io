@@ -1,0 +1,11 @@
+.originalImageLink {
+  display: inline-block;
+  max-width: 100%;
+  color: inherit;
+  cursor: zoom-in;
+}
+
+.originalImageLink:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
