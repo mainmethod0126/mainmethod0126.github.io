@@ -99,7 +99,10 @@ function inspectHtml(filename) {
       const id = attrs.id || (anchor && attributes(anchor).id)
       if (id) result.headings.push({ id, level: node.tagName, text: prose(node) })
     }
-    if (node.tagName === 'img') result.images.push({ ...attrs, link: attributes(ancestors.findLast(parent => parent.tagName === 'a') || {}) })
+    if (node.tagName === 'img') {
+      const link = ancestors.findLast(parent => parent.tagName === 'a')
+      result.images.push({ ...attrs, link: link && attributes(link) })
+    }
     const inBody = body && ancestors.includes(body)
     const isControl = ancestors.some(parent => ['button', 'nav', 'pre'].includes(parent.tagName) || ['giscus', 'nextra-breadcrumb'].some(value => (attributes(parent).class || '').split(/\s+/).includes(value)))
     if (!inBody || isControl) return
@@ -155,6 +158,16 @@ function selfFragment(href, relative) {
   }
 }
 
+function linkDestination(href, relative) {
+  if (typeof href !== 'string') return undefined
+  try {
+    const base = new URL(documentRoute(relative), 'https://mainmethod0126.github.io')
+    return new URL(href, base).href
+  } catch {
+    return undefined
+  }
+}
+
 function assetHash(filename) {
   if (!assetCache.has(filename)) assetCache.set(filename, sha256(readFileSync(filename)))
   return assetCache.get(filename)
@@ -173,10 +186,11 @@ function inspectMarkdown(filename) {
     }
     if (node.type === 'link' || node.type === 'linkReference') result.links.push(node.url || definitions.get(node.identifier))
     if (node.type === 'image' || node.type === 'imageReference') {
+      const link = ancestors.findLast(parent => ['link', 'linkReference'].includes(parent.type))
       result.images.push({
         url: node.url || definitions.get(node.identifier),
         alt: node.alt || '',
-        linked: ancestors.some(parent => ['link', 'linkReference'].includes(parent.type))
+        link: link && { url: link.type === 'link' ? link.url : definitions.get(link.identifier) }
       })
     }
   })
@@ -241,9 +255,11 @@ for (const filename of documents) {
         check(assetHash(original) === assetHash(exported), `${relative}: 정적 이미지 바이트 변경: ${url}`)
       }
     }
-    if (!image.linked) {
-      check(actual.link.href === actual.src && actual.link.target === '_blank', `${relative}: ${index + 1}번째 이미지 원본 새 탭 링크가 없습니다.`)
-      check(['noopener', 'noreferrer'].every(value => (actual.link.rel || '').split(/\s+/).includes(value)), `${relative}: ${index + 1}번째 이미지 원본 링크의 rel 속성이 누락되었습니다.`)
+    if (image.link) {
+      const expected = linkDestination(image.link.url, relative)
+      check(Boolean(expected && expected === linkDestination(actual.link?.href, relative)), `${relative}: ${index + 1}번째 이미지에 작성된 링크 대상 변경: ${image.link.url} → ${actual.link?.href}`)
+    } else {
+      check(!actual.link, `${relative}: ${index + 1}번째 이미지에 문서에서 작성하지 않은 링크가 있습니다.`)
     }
   }
   for (const link of rendered.links) {
