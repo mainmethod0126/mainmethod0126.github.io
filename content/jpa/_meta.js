@@ -1,0 +1,10 @@
+export default {
+  "Getting-Started-with-JPA": "자바 ORM 표준 JPA 프로그래밍 (1) - JPA 시작하기",
+  "Persistence-Management-Internal-Operation-Method": "자바 ORM 표준 JPA 프로그래밍 (2) - 영속성 관리 내부 동작 방식",
+  "Entity-Mapping": "자바 ORM 표준 JPA 프로그래밍 (3) - 엔티티 매핑",
+  "Basic-Relationship-Mapping": "자바 ORM 표준 JPA 프로그래밍 (4) - 연관관계 매핑 기초",
+  "various-associative-mappings": "자바 ORM 표준 JPA 프로그래밍 (5) - 다양한 연관관계 매핑",
+  "retrieving-hierarchical-data-with-jpa": "jpa 사용시 계층형 데이터 조회하기",
+  "bi-directional-mapping-ownership-dependency-analysis": "양방향 맵핑의 의존관계 주인에 대해서 알아보자",
+  "how-to-specify-unique-constraints-in-jpa": "JPA 고유 제약 조건(Unique Constraint) 지정 방법"
+};

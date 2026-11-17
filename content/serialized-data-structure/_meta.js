@@ -1,0 +1,3 @@
+export default {
+  "Basic-Concepts-of-Protocol-Buffers": "protocol buffer의 기본 개념"
+};

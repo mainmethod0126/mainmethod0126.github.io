@@ -1,0 +1,8 @@
+export default {
+  "bobgo": "오늘의 한식뷔페 메뉴가 궁금하다면? 밥고",
+  "search-condition-metadata": "search condition metadata",
+  "hiworks-auto-attendance": "hiworks auto attendance",
+  "simple-semantic-version": "simple semantic version",
+  "annotation-scanner": "annotation scanner",
+  "sneaky-chat-games": "sneaky chat games"
+};

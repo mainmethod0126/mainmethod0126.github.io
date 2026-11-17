@@ -1,0 +1,10 @@
+export default {
+  "Sample-for-creating-files-for-each-log-level-using-Spring-Boot-Logback-for-copy-and-paste-when-needed": "필요할 때 복붙을 위한 Spring Boot Logback 을 이용하여 log level별 파일 만들기 샘플",
+  "Reading-the-manifest-content-inside-a-jar": "jar 내부의 manifest 본문 읽어오기",
+  "webflux": "webflux",
+  "implement-login-using-json-body-instead-of-form-in-spring-security-1-filter": "spring security 에서 form말고 json body를 받는 REST API login 구현하기 (1) - Filter",
+  "implement-login-using-json-body-instead-of-form-in-spring-security-2-securityconfig": "spring security 에서 form말고 json body를 받는 REST API login 구현하기 (2) - SecurityConfig",
+  "authentication-failure-occurs-after-deploying-oauth2-authentication-to-k8s-which-worked-fine-locally": "local에서 문제없던 oauth2 인증이 k8s에 배포된 이후에 인증에 실패하는 현상",
+  "once-per-request-filter": "spring OncePerRequestFilter 란",
+  "spring-redis-idempotency-key-setnx-aop": "spring 에서 Redis와 AOP로 주문 API 멱등성 보장하기"
+};

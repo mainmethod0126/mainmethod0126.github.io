@@ -1,0 +1,10 @@
+export default {
+  "how-to-inject-config-from-external-config-js-file-in-nextjs-without-rebuild": "재빌드 없이 외부 config.js 파일로 부터 config 주입 받는 방법",
+  "how-to-deploy-nextjs-project-with-docker-and-serve-with-nginx": "nextjs프로젝트를 도커로 배포하고 nginx로 서비스하는 방법",
+  "stale-closure": "스테일 클로저(Stale Closure) 문제",
+  "nextjs-output-standalone-distdir-dist-resource-not-found-issue": "nextjs를 output: 'standalone', distDir: 'dist' 로 빌드하여 배포했을 때 resource 들을 못찾는 현상",
+  "zustand-use-localstorage": "zustand 상태관리에서 localStorage 사용하는 방법",
+  "data-sharing-between-browser-tabs-using-broadcastchannel": "BroadcastChannel 을 사용하여 브라우저 탭간의 데이터 공유",
+  "using-environment-variables-in-nextjs": "nextjs에서 환경변수 이용하기",
+  "react-hook-use-call-back": "react hook useCallback 이란"
+};
