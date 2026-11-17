@@ -1,0 +1,6 @@
+export default {
+  "SSLandTLS": "SSL과 TLS",
+  "What-is-SSH": "SSH(Secure Shell Protocol) 란?",
+  "oauth-authentication-method": "oauth에 대해서 알아보자",
+  "what-is-cors": "CORS 란?"
+};

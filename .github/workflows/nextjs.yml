@@ -1,95 +1,71 @@
-# Sample workflow for building and deploying a Next.js site to GitHub Pages
-#
-# To get started with Next.js see: https://nextjs.org/docs/getting-started
-#
-name: Deploy Next.js site to Pages
+name: Validate and deploy blog
 
 on:
-  # Runs on pushes targeting the default branch
+  pull_request:
+    branches: ["main"]
   push:
     branches: ["main"]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
 
 jobs:
-  # Build job
   build:
+    name: 의존성 및 문서 검증
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Detect package manager
-        id: detect-package-manager
-        run: |
-          if [ -f "${{ github.workspace }}/yarn.lock" ]; then
-            echo "manager=yarn" >> $GITHUB_OUTPUT
-            echo "command=install" >> $GITHUB_OUTPUT
-            echo "runner=yarn" >> $GITHUB_OUTPUT
-            exit 0
-          elif [ -f "${{ github.workspace }}/package.json" ]; then
-            echo "manager=npm" >> $GITHUB_OUTPUT
-            echo "command=ci" >> $GITHUB_OUTPUT
-            echo "runner=npx --no-install" >> $GITHUB_OUTPUT
-            exit 0
-          else
-            echo "Unable to determine package manager"
-            exit 1
-          fi
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: 저장소 가져오기
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: "latest"
-          cache: ${{ steps.detect-package-manager.outputs.manager }}
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+          persist-credentials: false
+      - name: Node.js 준비
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          # Automatically inject basePath in your Next.js configuration file and disable
-          # server side image optimization (https://nextjs.org/docs/api-reference/next/image#unoptimized).
-          #
-          # You may remove this line if you want to manage the configuration yourself.
-          static_site_generator: next
-      - name: Install dependencies
-        run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
-      - name: Build with Next.js
-        run: ${{ steps.detect-package-manager.outputs.runner }} next build
-      - name: Static HTML export with Next.js
-        run: ${{ steps.detect-package-manager.outputs.runner }} next export
-        # 검색 포털에 노출을 위한 소유권 등록 작업 (구글,네이버,다음 등)
-      - name: Ownership registration
-        run: |
-          echo "current dir : $(pwd)"
-          echo "github-workspace : ${{ github.workspace }}"
-          cp "${{ github.workspace }}/google35a5466dfdfa011e.html" ./out
-          cp "${{ github.workspace }}/navercb18aeb0875d47a7173de160b4087f5e.html" ./out
-          cp "${{ github.workspace }}/public/robots.txt" ./out
-          cp "${{ github.workspace }}/public/sitemap-0.xml" ./out
-          cp "${{ github.workspace }}/public/sitemap.xml" ./out
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: 잠금 파일 기준 의존성 설치
+        run: npm ci
+      - name: 알려진 의존성 취약점 검사
+        run: npm audit --audit-level=low
+      - name: TypeScript 검사
+        run: npm run typecheck
+      - name: 간접 의존성 호환성 검사
+        run: npm run verify:dependencies
+      - name: 정적 페이지 및 검색 색인 생성
+        run: npm run build
+      - name: 문서와 정적 출력 검증
+        run: npm run verify:content
+      - name: 배포 파일 업로드
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: ./out
 
-  # Deployment job
   deploy:
+    name: GitHub Pages 배포
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
     steps:
-      - name: Deploy to GitHub Pages
+      - name: GitHub Pages 설정 확인
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: 검증한 정적 파일 배포
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

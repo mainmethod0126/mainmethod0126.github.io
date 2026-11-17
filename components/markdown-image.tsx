@@ -1,6 +1,8 @@
-import Image, { ImageProps } from "next/image";
+"use client";
+
+import Image, { type ImageProps } from "next/image";
 import { Link } from "nextra-theme-docs";
-import { ComponentProps, createContext, useContext } from "react";
+import { type ComponentProps, createContext, useContext, useId } from "react";
 import styles from "./markdown-image.module.css";
 
 const MarkdownLinkContext = createContext(false);
@@ -9,9 +11,24 @@ export function MarkdownLink({
   children,
   ...props
 }: ComponentProps<typeof Link>) {
+  const descriptionId = useId();
+  // Nextra Anchor는 HTTP(S) 문자열 링크에만 기본 target="_blank"를 적용한다.
+  const defaultTarget =
+    typeof props.href === "string" && /^https?:\/\//.test(props.href)
+      ? "_blank"
+      : undefined;
+  const target = "target" in props ? props.target : defaultTarget;
+  const opensInNewTab = target === "_blank";
+  const describedBy = opensInNewTab
+    ? [props["aria-describedby"], descriptionId].filter(Boolean).join(" ")
+    : props["aria-describedby"];
+
   return (
     <MarkdownLinkContext.Provider value={true}>
-      <Link {...props}>{children}</Link>
+      <Link {...props} aria-describedby={describedBy}>{children}</Link>
+      {opensInNewTab && (
+        <span id={descriptionId} className="x:sr-only" data-pagefind-ignore="all">새 탭에서 열림</span>
+      )}
     </MarkdownLinkContext.Provider>
   );
 }

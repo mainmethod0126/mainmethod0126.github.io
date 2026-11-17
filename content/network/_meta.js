@@ -1,0 +1,9 @@
+export default {
+  "p2p-udp-hole-punching": "p2p에서 udp 홀 펀칭(hole punching)",
+  "half-open-and-keepalive": "half open 과 keep alive",
+  "what-is-jitter": "jitter란?",
+  "exponential-backoff": "exponential backoff란?",
+  "three-message-transmission-types": "메세지 전송 타입 3가지",
+  "browser-http11-connection-limit-and-request-queueing": "Chromium 기반 브라우저의 HTTP/1.1 연결 6개 제한과 요청 대기",
+  "how-http-version-is-selected": "HTTP/1.1과 HTTP/2는 어떻게 선택될까?"
+};

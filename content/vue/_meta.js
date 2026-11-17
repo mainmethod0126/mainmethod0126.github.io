@@ -1,0 +1,3 @@
+export default {
+  "Troubleshooting-BABEL-Related-Errors-During-Vue-Project-Build": "vue project build시에 발생한 BABEL관련 오류 해결해보기"
+};

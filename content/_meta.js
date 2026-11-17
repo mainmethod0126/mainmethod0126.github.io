@@ -1,0 +1,50 @@
+export default {
+  "index": "Introduction",
+  "my-profile": "My Profile",
+  "life-beyond-tech": "Life Beyond Tech",
+  "---projects---": {
+    "title": "",
+    "type": "separator"
+  },
+  "projects": "projects",
+  "---posts---": {
+    "title": "",
+    "type": "separator"
+  },
+  "common": "common",
+  "design-pattern": "design patterns",
+  "network": "network",
+  "linux": "linux",
+  "msa": "msa",
+  "docker": "docker",
+  "k8s": "k8s",
+  "cpp": "c++",
+  "elasticsearch": "elasticsearch",
+  "java": "java",
+  "javascript": "javascript",
+  "rdb": "rdb",
+  "nginx": "nginx",
+  "security": "security",
+  "kafka": "kafka",
+  "jenkins": "jenkins",
+  "typescript": "typescript",
+  "vue": "vue",
+  "nextjs": "nextjs",
+  "nodejs": "nodejs",
+  "spring": "spring",
+  "jpa": "jpa",
+  "serialized-data-structure": "serialized data structure",
+  "webRTC": "webRTC",
+  "electron": "electron",
+  "etc": "etc",
+  "tistory": {
+    "title": "Tistory Blog ↗",
+    "type": "page",
+    "href": "https://shinwusub.tistory.com/"
+  },
+  "oldgitblog": {
+    "title": "Old Github Blog ↗",
+    "type": "page",
+    "href": "https://mainmethod0126.github.io/old-tech-blog/"
+  }
+};

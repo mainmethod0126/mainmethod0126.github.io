@@ -1,35 +1,61 @@
 {
-  "name": "nextra-docs-template",
+  "name": "mainmethod0126-blog",
   "version": "0.0.1",
-  "description": "Nextra docs template",
+  "description": "신우섭의 도서관 v2",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "postbuild": "next-sitemap",
-    "start": "next start",
-    "export": "next build && next export"
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "postbuild": "pagefind --site out --output-path out/_pagefind && node scripts/generate-sitemap.mjs",
+    "typecheck": "next typegen && tsc --noEmit",
+    "verify:content": "node scripts/verify-content.mjs",
+    "verify:dependencies": "node scripts/verify-dependencies.mjs",
+    "postinstall": "patch-package --error-on-fail"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shuding/nextra-docs-template.git"
+    "url": "git+https://github.com/mainmethod0126/mainmethod0126.github.io.git"
   },
   "author": "Shu Ding <g@shud.in>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/shuding/nextra-docs-template/issues"
+    "url": "https://github.com/mainmethod0126/mainmethod0126.github.io/issues"
   },
-  "homepage": "https://github.com/shuding/nextra-docs-template#readme",
+  "homepage": "https://mainmethod0126.github.io",
   "dependencies": {
-    "next": "^13.4.19",
-    "next-sitemap": "^4.2.3",
-    "nextra": "^2.12.3",
-    "nextra-theme-docs": "^2.12.3",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "sharp": "^0.32.5"
+    "@giscus/react": "3.1.0",
+    "next": "16.4.6",
+    "nextra": "4.6.1",
+    "nextra-theme-docs": "4.6.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
-    "@types/node": "18.11.10",
-    "typescript": "^4.9.3"
-  }
+    "@types/mdx": "2.0.14",
+    "@types/node": "^24",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "pagefind": "1.6.0",
+    "parse5": "8.1.1",
+    "patch-package": "8.0.1",
+    "remark-mdx": "3.1.1",
+    "remark-parse": "11.0.0",
+    "remark-smartypants": "3.0.3",
+    "typescript": "6.0.3",
+    "unified": "11.0.5"
+  },
+  "private": true,
+  "engines": {
+    "node": "^24.0.0 || ^26.0.0"
+  },
+  "packageManager": "npm@11.19.1",
+  "overrides": {
+    "nextra": {
+      "katex": "0.19.1",
+      "@ts-morph/common": {
+        "minimatch": "11.0.9"
+      }
+    }
+  },
+  "type": "module"
 }

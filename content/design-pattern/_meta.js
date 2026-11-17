@@ -1,0 +1,3 @@
+export default {
+  "understanding-ports-and-adapters-with-payment-example": "결제 예제로 이해하는 포트와 어댑터 패턴"
+};

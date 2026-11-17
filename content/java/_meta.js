@@ -1,0 +1,17 @@
+export default {
+  "Analyzing-JAVA-Memory-Leak-Issues": "JAVA 메모리 누수 이슈 분석",
+  "JDBC-DataSource-Connection-Statement-Savepoint": "JDBC, DataSource, Connection, Statement, Savepoint",
+  "What-is-a-Servlet-in-JAVA": "자바에서 말하는 Servlet 이란?",
+  "Dependency-Conflict-Testing-in-a-JAVA-Project": "JAVA 프로젝트에서 의존성 충돌 테스트",
+  "What-happens-if-you-do-not-specify-a-version-in-Gradle-dependencies": "Gradle 의존성에서 version을 명시 하지 않았을 경우에 어떻게 되나",
+  "deploying-a-java-open-source-library-project-to-maven-central": "java open source 라이브러리 프로젝트를 maven central 에 배포하기 (with gradle)",
+  "lets-differentiate-between-base64-and-base64urlsafe": "base64와 base64UrlSafe를 구분해서 사용하자",
+  "gradle-test-executor-encoding": "Gradle build 시 Test 코드 인코딩이 UTF-8로 인코딩 되지 않는 이유(실제 빌드시와 디버깅 시 테스트 결과가 다른 이유)",
+  "generate-javadoc-for-private-modifiers-in-gradle": "gradle에서 javadoc생성시 private 제한자에 대한 문서 생성하기",
+  "java-predicate": "자바의 Predicate",
+  "lets-try-using-the-grpc-java-library": "grpc-java 라이브러리를 사용해보자",
+  "snake-case-to-camelCase-mapping-method": "스네이크 케이스를 카멜 케이스로 Mapping 시키는 방법",
+  "java-httpclient-connection-pool-exceed-problem": "java httpClient connection pool 초과로 무한 대기 발생하는 문제",
+  "stiring-stringbuilder-stringbuffer": "String, StringBuilder, StringBuffer",
+  "relationship-between-bom-bill-of-materials-and-dependency-version-specification-in-gradle": "gradle 에서 BOM(Bill of Materials) 와 의존성 버전명시의 관계"
+};
