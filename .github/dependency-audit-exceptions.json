@@ -1,0 +1,16 @@
+{
+  "exceptions": [
+    {
+      "advisory": "GHSA-fc5q-39xc-vjpf",
+      "package": "picomatch",
+      "expiresAt": "2026-11-25T00:00:00+09:00",
+      "reason": "Snyk가 철회한 권고가 GitHub/npm에는 남아 있어, 사용자 승인에 따라 이 권고와 해당 권고에서만 파생된 보고를 임시 허용합니다. 취약점 수정이나 영구 제외를 뜻하지 않습니다.",
+      "issue": "https://github.com/mainmethod0126/mainmethod0126.github.io/issues/50",
+      "references": [
+        "https://security.snyk.io/vuln/SNYK-JS-PICOMATCH-21248802",
+        "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+        "https://github.com/micromatch/picomatch/pull/235#issuecomment-6315749381"
+      ]
+    }
+  ]
+}

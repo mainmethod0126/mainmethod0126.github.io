@@ -7,6 +7,8 @@
     "build": "next build --webpack",
     "postbuild": "pagefind --site out --output-path out/_pagefind && node scripts/generate-sitemap.mjs",
     "typecheck": "next typegen && tsc --noEmit",
+    "test:audit": "node --test scripts/dependency-audit.test.mjs",
+    "audit:dependencies": "node scripts/audit-dependencies.mjs",
     "verify:content": "node scripts/verify-content.mjs",
     "verify:dependencies": "node scripts/verify-dependencies.mjs",
     "postinstall": "patch-package --error-on-fail"
