@@ -30,6 +30,9 @@ npm run dev
 | `next.config.mjs` | Nextra 연결과 정적 내보내기 설정 |
 | `scripts/generate-sitemap.mjs` | 현재 문서 경로로 사이트맵 생성 |
 | `scripts/verify-content.mjs` | 원본 문서와 정적 출력 비교, 선택적 이전 기준 비교 |
+| `scripts/audit-dependencies.mjs` | npm 감사 결과 수집과 종료 상태·경고 출력 |
+| `scripts/lib/dependency-audit.mjs` | 감사 응답 검증, 간접 원인 추적과 예외 판정 |
+| `.github/dependency-audit-exceptions.json` | 승인된 권고별 임시 예외의 근거와 만료 시각 |
 | `.github/workflows/nextjs.yml` | 의존성 검사, 빌드, 문서 검증, GitHub Pages 배포 |
 
 `content/index.mdx`는 `/`에 대응합니다. 나머지 문서는 `content` 아래의 상대 경로를 URL로 사용합니다. 기존 문서의 파일 이름과 디렉터리를 바꾸면 공개 주소와 댓글 연결이 달라질 수 있으므로 유지합니다. 문서 옆의 `images` 디렉터리도 상대 위치를 유지합니다.
@@ -37,7 +40,8 @@ npm run dev
 ## 빌드와 검증
 
 ```bash
-npm audit --audit-level=low
+npm run test:audit
+npm run audit:dependencies
 npm run typecheck
 npm run verify:dependencies
 npm run build
@@ -57,6 +61,12 @@ npm run verify:content
 Pagefind 검색 색인은 정적 빌드 결과를 사용합니다. 검색 검증은 검색 색인을 포함한 `out`을 정적 웹 서버로 제공한 환경에서 수행합니다. `npm run dev`만 실행한 상태와 정적 배포 결과를 구분합니다.
 
 의존성 취약점 검사는 개발 의존성도 포함합니다. 취약점이 발견되면 원인 의존성을 확인하고 수정한 뒤 검증 명령을 다시 실행합니다. 버전만 강제로 교체하거나 검사 실패를 무시하지 않습니다.
+
+`npm run audit:dependencies`는 실제 `npm audit --json --audit-level=low` 응답을 받아 각 보고의 근원 권고를 검사합니다. 다른 권고가 하나라도 섞이면 차단하며, 통신·프로세스 오류, 손상된 응답, 해석할 수 없는 간접 참조도 실패로 처리합니다. 예외는 권고 식별자와 패키지가 일치하고 만료 전인 경우에만 적용합니다. GitHub Actions는 적용한 예외와 만료 시각을 경고로 표시합니다.
+
+현재 [GitHub Issue #50](https://github.com/mainmethod0126/mainmethod0126.github.io/issues/50)의 사용자 승인에 따라 `picomatch`의 `GHSA-fc5q-39xc-vjpf`만 **한국 시간 2026년 11월 25일 0시 전까지** 임시 허용합니다. [Snyk는 권고를 철회](https://security.snyk.io/vuln/SNYK-JS-PICOMATCH-21248802)했지만 [GitHub 권고](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)는 유지되고 있습니다. 이 정책은 해당 권고에서만 파생된 간접 의존성 보고에도 적용하며, 패키지 전체나 다른 권고를 제외하지 않습니다. 취약점 수정으로 표시하지 않고 기한도 자동 연장하지 않습니다.
+
+같은 보고가 만료 시각 이후에도 남아 있으면 배포 검증이 다시 실패합니다. 만료 전에 Issue #50에서 공식 권고·수정 버전·실제 사용 범위를 재검토합니다. 공식 수정이나 권고 철회로 보고가 사라지면 예외를 제거하고 감사·호환성·빌드·문서 검증을 다시 수행합니다. 원본 보고는 `npm audit --json`으로 별도 확인할 수 있으며, 임시 허용 중에도 원본 명령은 실패할 수 있습니다.
 
 Nextra 4.6.1의 간접 의존성에 남은 보안 수정은 `package.json`의 `overrides`로 관리합니다. Nextra 하위의 KaTeX는 `0.19.1`, `@ts-morph/common`이 사용하는 minimatch는 `11.0.9`로 한정합니다. 상위 패키지가 수정 버전을 정식 의존성으로 채택하면 해당 설정을 제거하고 설치, 취약점 검사, 수식·파일 선택·문서 렌더링 검증을 다시 수행합니다. TypeScript는 Nextra의 Twoslash가 지원하는 `6.0.3`을 사용합니다.
 

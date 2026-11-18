@@ -35,8 +35,10 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: 잠금 파일 기준 의존성 설치
         run: npm ci
+      - name: 의존성 감사 정책 테스트
+        run: npm run test:audit
       - name: 알려진 의존성 취약점 검사
-        run: npm audit --audit-level=low
+        run: npm run audit:dependencies
       - name: TypeScript 검사
         run: npm run typecheck
       - name: 간접 의존성 호환성 검사

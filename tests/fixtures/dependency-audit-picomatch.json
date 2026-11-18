@@ -1,0 +1,260 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@ts-morph/common": {
+      "name": "@ts-morph/common",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "tinyglobby"
+      ],
+      "effects": [
+        "ts-morph"
+      ],
+      "range": "0.25.0 || >=0.28.0",
+      "nodes": [
+        "node_modules/@ts-morph/common"
+      ],
+      "fixAvailable": {
+        "name": "nextra",
+        "version": "3.3.1",
+        "isSemVerMajor": true
+      }
+    },
+    "fast-glob": {
+      "name": "fast-glob",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "micromatch"
+      ],
+      "effects": [
+        "nextra"
+      ],
+      "range": ">=3.0.0",
+      "nodes": [
+        "node_modules/fast-glob"
+      ],
+      "fixAvailable": {
+        "name": "nextra",
+        "version": "3.3.1",
+        "isSemVerMajor": true
+      }
+    },
+    "fdir": {
+      "name": "fdir",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "picomatch"
+      ],
+      "effects": [
+        "tinyglobby"
+      ],
+      "range": ">=5.2.1",
+      "nodes": [
+        "node_modules/tinyglobby/node_modules/fdir"
+      ],
+      "fixAvailable": {
+        "name": "nextra",
+        "version": "3.3.1",
+        "isSemVerMajor": true
+      }
+    },
+    "find-yarn-workspace-root": {
+      "name": "find-yarn-workspace-root",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "micromatch"
+      ],
+      "effects": [
+        "patch-package"
+      ],
+      "range": ">=2.0.0",
+      "nodes": [
+        "node_modules/find-yarn-workspace-root"
+      ],
+      "fixAvailable": {
+        "name": "patch-package",
+        "version": "6.4.5",
+        "isSemVerMajor": true
+      }
+    },
+    "micromatch": {
+      "name": "micromatch",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "picomatch"
+      ],
+      "effects": [
+        "fast-glob",
+        "find-yarn-workspace-root"
+      ],
+      "range": ">=4.0.0",
+      "nodes": [
+        "node_modules/micromatch"
+      ],
+      "fixAvailable": {
+        "name": "nextra",
+        "version": "3.3.1",
+        "isSemVerMajor": true
+      }
+    },
+    "nextra": {
+      "name": "nextra",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "fast-glob",
+        "ts-morph"
+      ],
+      "effects": [
+        "nextra-theme-docs"
+      ],
+      "range": ">=4.0.0-app-router.0",
+      "nodes": [
+        "node_modules/nextra"
+      ],
+      "fixAvailable": {
+        "name": "nextra",
+        "version": "3.3.1",
+        "isSemVerMajor": true
+      }
+    },
+    "nextra-theme-docs": {
+      "name": "nextra-theme-docs",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "nextra"
+      ],
+      "effects": [],
+      "range": ">=4.0.0-app-router.0",
+      "nodes": [
+        "node_modules/nextra-theme-docs"
+      ],
+      "fixAvailable": {
+        "name": "nextra-theme-docs",
+        "version": "3.3.1",
+        "isSemVerMajor": true
+      }
+    },
+    "patch-package": {
+      "name": "patch-package",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "find-yarn-workspace-root"
+      ],
+      "effects": [],
+      "range": ">=6.4.6",
+      "nodes": [
+        "node_modules/patch-package"
+      ],
+      "fixAvailable": {
+        "name": "patch-package",
+        "version": "6.4.5",
+        "isSemVerMajor": true
+      }
+    },
+    "picomatch": {
+      "name": "picomatch",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1247710,
+          "name": "picomatch",
+          "dependency": "picomatch",
+          "title": "picomatch vulnerable to ReDoS through single-branch repeated extglobs",
+          "url": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+          "severity": "high",
+          "cwe": [
+            "CWE-1333"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<=4.0.7"
+        }
+      ],
+      "effects": [
+        "fdir",
+        "micromatch",
+        "tinyglobby"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/picomatch",
+        "node_modules/tinyglobby/node_modules/picomatch"
+      ],
+      "fixAvailable": {
+        "name": "nextra",
+        "version": "3.3.1",
+        "isSemVerMajor": true
+      }
+    },
+    "tinyglobby": {
+      "name": "tinyglobby",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "fdir",
+        "picomatch"
+      ],
+      "effects": [
+        "@ts-morph/common"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/tinyglobby"
+      ],
+      "fixAvailable": {
+        "name": "nextra",
+        "version": "3.3.1",
+        "isSemVerMajor": true
+      }
+    },
+    "ts-morph": {
+      "name": "ts-morph",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "@ts-morph/common"
+      ],
+      "effects": [
+        "nextra"
+      ],
+      "range": "24.0.0 || >=27.0.0",
+      "nodes": [
+        "node_modules/ts-morph"
+      ],
+      "fixAvailable": {
+        "name": "nextra",
+        "version": "3.3.1",
+        "isSemVerMajor": true
+      }
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 11,
+      "critical": 0,
+      "total": 11
+    },
+    "dependencies": {
+      "prod": 450,
+      "dev": 53,
+      "optional": 53,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 548
+    }
+  }
+}
