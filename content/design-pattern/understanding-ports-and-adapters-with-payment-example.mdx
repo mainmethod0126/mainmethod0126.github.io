@@ -1,6 +1,6 @@
 # 결제 예제로 이해하는 포트와 어댑터 패턴
 
-포트는 애플리케이션이 필요로 하는 기능의 계약이고, 어댑터는 외부 시스템을 그 계약에 맞게 연결하는 구현이다.
+주문 애플리케이션이 외부 결제 업체에 요청할 기능을 정한 계약이 **출력 포트**다. **출력 어댑터**는 그 계약에 따라 주문 금액을 결제 업체의 요청 형식으로 바꾸고, 결제 결과를 주문 애플리케이션에 전달한다.
 
 토스페이먼츠를 연동하는 결제 기능을 예로 들면 전체 흐름은 다음과 같다.
 
@@ -15,7 +15,7 @@ OrderService
 
 ## OrderService가 필요한 기능을 포트로 정의한다
 
-`OrderService`는 토스페이먼츠에 직접 의존하지 않고 자신에게 필요한 결제 기능만 정의한다.
+`OrderService`에 필요한 결제 기능은 단순하다. 원화 금액을 전달하면 결제 성공 시 호출이 완료되고, 실패 시 오류가 발생해야 한다.
 
 ```ts
 interface PaymentPort {
@@ -33,7 +33,7 @@ class OrderService {
 
 ## 개발자가 어댑터를 구현한다
 
-개발자는 `PaymentPort`를 보고 토스페이먼츠를 연결하는 어댑터를 구현한다.
+토스페이먼츠 출력 어댑터는 주문 금액을 `totalAmount`로 전달한다. 이 예제의 `TossPaymentsClient.createPayment`는 결제 실패 시 오류를 던진다고 가정한다.
 
 ```ts
 class TossPaymentsPaymentAdapter implements PaymentPort {
@@ -55,6 +55,36 @@ const orderService = new OrderService(payment);
 ```
 
 `OrderService`는 `PaymentPort`만 알고 토스페이먼츠의 메서드나 요청 형식은 알지 못한다.
+
+## 토스페이먼츠에서 NHN KCP로 교체한다
+
+NHN KCP의 결제 승인 요청에서 금액 필드는 `ordr_mony`다. 결제 승인 응답의 `res_cd`가 `"0000"`이면 승인에 성공한 것이다. 아래의 `NhnKcpClient.approvePayment`는 이 두 필드만 다루는 설명용 메서드다. 실제 연동에 필요한 주문번호와 결제창 인증 정보 등은 예제에서 생략했다. [NHN KCP 결제 승인 API 문서](https://developer.kcp.co.kr/reference/pay-approve)
+
+```ts
+class NhnKcpPaymentAdapter implements PaymentPort {
+  constructor(private readonly nhnKcpClient: NhnKcpClient) {}
+
+  async pay(amount: number): Promise<void> {
+    const result = await this.nhnKcpClient.approvePayment({
+      ordr_mony: amount
+    });
+
+    if (result.res_cd !== "0000") {
+      throw new Error("NHN KCP 결제 승인에 실패했습니다.");
+    }
+  }
+}
+```
+
+이제 `OrderService`를 생성하는 곳에서 NHN KCP 출력 어댑터를 주입한다.
+
+```ts
+const payment = new NhnKcpPaymentAdapter(nhnKcpClient);
+const orderService = new OrderService(payment);
+await orderService.order(10_000);
+```
+
+두 경우 모두 `OrderService`는 `payment.pay(amount)`를 호출한다. 토스페이먼츠 출력 어댑터는 10,000원을 `totalAmount`로 전달하고 설명용 클라이언트의 오류를 그대로 전파한다. NHN KCP 출력 어댑터는 같은 10,000원을 `ordr_mony`로 전달하고 승인 실패 응답을 오류로 바꾼다. 덕분에 `OrderService`에는 결제 업체를 선택하는 조건문도, `res_cd`를 검사하는 코드도 필요하지 않다.
 
 ## 내가 이해한 흐름
 
